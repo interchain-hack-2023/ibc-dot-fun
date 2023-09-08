@@ -63,7 +63,6 @@ import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
 import { fromBase64 } from "@cosmjs/encoding";
 import { createCosmosPayload } from "./transactions";
 import { Proto,  } from "@evmos/proto"
-import RLP from 'rlp'
 import ethers from "ethers";
 
 export function getChainByID(chainID: string) {
@@ -213,7 +212,6 @@ export async function getSigningCosmWasmClientForChainID(
   return client;
 }
 
-
 export function createCosmosMessageMsgEthereumTx(
   nonce: bigint,
   gasPrice: string,
@@ -241,22 +239,25 @@ export function createCosmosMessageMsgEthereumTx(
 
   // TODO: compute size and hash from ethTx.
   const size = 0
-  const transaction = {
+  const signature = {
+      r: ethers.hexlify(r),
+      s: ethers.hexlify(s),
+      v: Buffer.from(v).readUintBE(0, v.length) // number
+  }
+
+  const transaction: ethers.TransactionLike = {
     nonce: Number(nonce),
     gasPrice: gasPrice,
     gasLimit: gas,
     to: to,
     value: value,
-    data: data,
+    data: data.toString(),
+    signature: signature
   }
-  const signature = {
-      r: ethers.utils.hexlify(r),
-      s: ethers.utils.hexlify(s),
-      v: Buffer.from(v).readUintBE(0, v.length) // number
-  }
-  const hash: string = ethers.utils.serializeTransaction(transaction, signature)
+  const hash: string = ethers.Transaction.from(transaction).serialized
   return new Proto.Ethermint.EVM.Tx.MsgEthereumTx(
     {
+      // @ts-ignore
       data: ethTx,
       size: size,
       hash: hash,

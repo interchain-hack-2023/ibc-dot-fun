@@ -64,7 +64,7 @@ const AssetInput: FC<Props> = ({
       return "0.0";
     }
 
-    return ethers.utils.formatUnits(balanceWei, asset.decimals);
+    return ethers.formatUnits(balanceWei, asset.decimals);
   }, [asset, balances]);
 
   const maxButtonDisabled = useMemo(() => {
