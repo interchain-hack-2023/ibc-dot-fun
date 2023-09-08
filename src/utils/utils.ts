@@ -237,8 +237,6 @@ export function createCosmosMessageMsgEthereumTx(
     }
   )
 
-  // TODO: compute size and hash from ethTx.
-  const size = 0
   const signature = {
       r: ethers.hexlify(r),
       s: ethers.hexlify(s),
@@ -259,7 +257,7 @@ export function createCosmosMessageMsgEthereumTx(
     {
       // @ts-ignore
       data: ethTx,
-      size: size,
+      size: ethTx.toBinary().length, // deprecated
       hash: hash,
       from: from
     }
