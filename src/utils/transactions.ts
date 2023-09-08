@@ -1,6 +1,4 @@
-import {
-TxContext,
-} from "@evmos/transactions/"
+import { TxContext } from "@evmos/transactions/"
 
 import { createTransactionWithMultipleMessages } from "@evmos/proto"
 
