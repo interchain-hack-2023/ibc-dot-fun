@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { EthSignType } from '@keplr-wallet/types';
 import {
   EncodeObject,
   OfflineSigner,
@@ -68,6 +69,7 @@ import { createCosmosPayload } from "./transactions";
 import { Proto } from "@evmos/proto";
 import ethers from "ethers";
 import { CompressedBatchProof } from "cosmjs-types/proofs";
+import assert from "assert";
 
 export function getChainByID(chainID: string) {
   return chainRegistry.chains.find(
@@ -216,46 +218,66 @@ export async function getSigningCosmWasmClientForChainID(
   return client;
 }
 
-export function createCosmosMessageMsgEthereumTx(
+export async function createCosmosMessageMsgEthereumTx(
+  chainId: string,
   nonce: bigint,
-  gasPrice: string,
-  gas: bigint,
+  gasPrice: bigint,
+  gasLimit: bigint,
   to: string,
-  value: string,
-  data: Uint8Array,
-  v: Uint8Array,
-  r: Uint8Array,
-  s: Uint8Array,
+  value: bigint,
+  data: string,
   from: string
-): Proto.Ethermint.EVM.Tx.MsgEthereumTx {
-  const ethTx = new Proto.Ethermint.EVM.Tx.LegacyTx({
-    nonce: nonce,
-    gasPrice: gasPrice,
-    gas: gas,
-    to: to,
-    value: value,
-    data: data,
-    v: v,
-    r: r,
-    s: s,
-  });
+): Promise<Proto.Ethermint.EVM.Tx.MsgEthereumTx> {
+  if (!window.keplr) {
+    throw new Error("Keplr not found");
+  }
+  const account = await window.keplr.getKey(chainId);
+  const signature = await window.keplr.signEthereum(
+    chainId,
+    account.bech32Address,
+    JSON.stringify({
+      nonce: Number(nonce),
+      gasPrice: Number(gasPrice),
+      gasLimit: Number(gasLimit),
+      to: to,
+      value: Number(value),
+      data: data,
+    }), EthSignType.TRANSACTION);
 
-  const signature = {
-    r: ethers.hexlify(r),
-    s: ethers.hexlify(s),
-    v: Buffer.from(v).readUintBE(0, v.length), // number
-  };
+  assert(signature.length === 65, "signature length is invalid");
 
+  const r = signature.slice(0, 32);
+  const s = signature.slice(32, 64);
+  const v = signature.slice(64, 65);
   const transaction: ethers.TransactionLike = {
     nonce: Number(nonce),
     gasPrice: gasPrice,
-    gasLimit: gas,
+    gasLimit: gasLimit,
     to: to,
     value: value,
-    data: data.toString(),
-    signature: signature,
+    data: data,
+    signature: {
+      r: ethers.hexlify(r), s: ethers.hexlify(s), v: ethers.hexlify(v),
+    },
   };
-  const hash: string = ethers.Transaction.from(transaction).serialized;
+
+  const hash = ethers.Transaction.from(transaction).hash;
+  if (!hash) {
+    throw new Error("Signature is empty");
+  }
+
+  const ethTx = new Proto.Ethermint.EVM.Tx.LegacyTx({
+    nonce: nonce,
+    gasPrice: gasPrice.toString(),
+    gas: gasLimit,
+    to: to,
+    value: value.toString(),
+    data: ethers.getBytes(data),
+    r: r,
+    s: s,
+    v: v,
+  });
+
   return new Proto.Ethermint.EVM.Tx.MsgEthereumTx({
     // @ts-ignore
     data: ethTx,
