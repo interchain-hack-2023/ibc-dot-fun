@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from "axios";
 import { Chain } from "../types";
 import { FungibleService } from "./fungible";
 import { TransactionService } from "./transaction";
+import { EvmService } from "./evm";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.skip.money/v1";
 const API_EVM_URL = process.env.NEXT_PUBLIC_API_EVM_URL;
@@ -50,13 +51,14 @@ export class SkipClient {
 export class LeapClient {
   private httpClientForEVM: AxiosInstance;
   public skipClient: SkipClient;
+  public evm: EvmService;
 
   constructor(ignoreChains: string[] = []) {
     this.skipClient = new SkipClient(ignoreChains);
-
     this.httpClientForEVM = axios.create({
       baseURL: API_EVM_URL,
       timeout: 5000,
     });
+    this.evm = new EvmService(this.httpClientForEVM);
   }
 }
