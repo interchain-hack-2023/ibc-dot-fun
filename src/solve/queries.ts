@@ -133,11 +133,11 @@ export function useEVMRoute(
 
       const cosmoTargetChainTokenIn: string =
         tokenChainMap[targetChainId][
-          cosmoToERCMap[targetChainId][sourceAsset].name
+          cosmoToERCMap[sourceAssetChainID][sourceAsset].name
         ];
       const cosmoTargetChainTokenOut: string =
         tokenChainMap[targetChainId][
-          cosmoToERCMap[targetChainId][destinationAsset].name
+          cosmoToERCMap[destinationAssetChainID][destinationAsset].name
         ];
 
       const ercTokenInAddr: string =
@@ -155,8 +155,8 @@ export function useEVMRoute(
 
       const postQuoteRequest: PostQuoteRequestDto = {
         chainId: cosmoToErcChainIdMap[targetChainId].chainId,
-        tokenInAddr: ercTokenInAddr,
-        tokenOutAddr: ercTokenOutAddr,
+        tokenInAddr: ercTokenInAddr.toLowerCase(),
+        tokenOutAddr: ercTokenOutAddr.toLowerCase(),
         from: "",
         /**
          * TODO: decimals

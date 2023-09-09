@@ -12,8 +12,10 @@ import {
   signAndBroadcastEvmos,
   signAndBroadcastInjective,
   getAccount,
+  createCosmosMessageMsgEthereumTx,
+  signAndBroadcastEvmosRaw,
 } from "@/utils/utils";
-import { keccak256 } from "ethers";
+import { getBigInt, keccak256 } from "ethers";
 
 import {
   getEVMChainId,
@@ -29,7 +31,12 @@ import { LeapClient, MsgsRequest, RouteResponse } from "./client";
 import Long from "long";
 import { OfflineAminoSigner } from "@keplr-wallet/types";
 import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
-import { PostBuildRequestDto, PostBuildResponseDto } from "./types";
+import { MsgsResponse } from "./client";
+import {
+  PostBuildRequestDto,
+  PostBuildResponseDto,
+  MultiChainMsg,
+} from "./types";
 
 import { ethers } from "ethers";
 
@@ -60,8 +67,8 @@ async function buildEVMHexData(
 
   const postBuildRequestDto: PostBuildRequestDto = {
     chainId: cosmoToErcChainIdMap[route.source_asset_chain_id].chainId,
-    tokenInAddr: ercTokenInAddr,
-    tokenOutAddr: ercTokenOutAddr,
+    tokenInAddr: ercTokenInAddr.toLowerCase(),
+    tokenOutAddr: ercTokenOutAddr.toLowerCase(),
     from: evmSenderAddr,
     amount: route.amount_in,
     slippageBps: 100,
@@ -72,12 +79,19 @@ async function buildEVMHexData(
   return await leapClient.evm.postBuild(postBuildRequestDto);
 }
 
-async function getEVMNonce(address: string, chainID: string) {
+async function getEVMConfig(address: string, chainID: string) {
   const provider = new ethers.JsonRpcProvider(
     cosmoToErcChainIdMap[chainID].rpc
   );
   const nonce = await provider.getTransactionCount(address);
-  return nonce;
+  let gasPrice;
+  try {
+    gasPrice = await provider._perform({ method: "getGasPrice" });
+  } catch (error) {
+    gasPrice = getBigInt(250000000000);
+  }
+
+  return { nonce, gasPrice };
 }
 
 export async function executeRoute(
@@ -99,15 +113,31 @@ export async function executeRoute(
   }
 
   let evmSenderAddr;
+  let evmTx;
+  let evmMsgsResponse: MsgsResponse;
   if (getEVMChainId(route.source_asset_chain_id) != 0) {
     const account = await getAccount(walletClient, route.source_asset_chain_id);
     const pk = Buffer.from(account.pubkey).toString("base64");
-    const evmSenderAddr = "0x" + keccak256(pk).slice(20);
-    const nonce = await getEVMNonce(evmSenderAddr, route.source_asset_chain_id);
-    const result: PostBuildResponseDto = await buildEVMHexData(
+    evmSenderAddr = "0x" + keccak256(pk).slice(20);
+    const { nonce, gasPrice } = await getEVMConfig(
+      evmSenderAddr,
+      route.source_asset_chain_id
+    );
+    const buildResult: PostBuildResponseDto = await buildEVMHexData(
       leapClient,
       evmSenderAddr,
       route
+    );
+
+    evmTx = await createCosmosMessageMsgEthereumTx(
+      route.source_asset_chain_id,
+      getBigInt(nonce),
+      gasPrice,
+      getBigInt(buildResult.result.gasLimit),
+      buildResult.result.to,
+      getBigInt(buildResult.result.value),
+      buildResult.result.data,
+      evmSenderAddr
     );
   }
 
@@ -330,33 +360,45 @@ export async function executeRoute(
       }
     } else {
       /// execute msg using cosmwasm
-      msg = {
-        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
-        value: {
-          sender: msgJSON.sender,
-          contract: msgJSON.contract,
-          msg: Uint8Array.from(Buffer.from(JSON.stringify(msgJSON.msg))),
-          funds: msgJSON.funds,
-        },
-      };
 
-      const client = await getSigningCosmWasmClientForChainID(
-        multiHopMsg.chain_id,
-        signer,
-        {
-          // @ts-ignore
-          gasPrice: GasPrice.fromString(
-            `${feeInfo.average_gas_price}${feeInfo.denom}`
-          ),
+      if (multiHopMsg.chain_id === "evmos_9001-2") {
+        const account = await getAccount(
+          walletClient,
+          route.source_asset_chain_id
+        );
+
+        if (evmTx) {
+          await signAndBroadcastEvmosRaw(walletClient, account.address, evmTx);
         }
-      );
+      } else {
+        msg = {
+          typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+          value: {
+            sender: msgJSON.sender,
+            contract: msgJSON.contract,
+            msg: Uint8Array.from(Buffer.from(JSON.stringify(msgJSON.msg))),
+            funds: msgJSON.funds,
+          },
+        };
 
-      const tx = await client.signAndBroadcast(msgJSON.sender, [msg], {
-        amount: [coin(0, feeInfo.denom)],
-        gas: `${gasNeeded}`,
-      });
+        const client = await getSigningCosmWasmClientForChainID(
+          multiHopMsg.chain_id,
+          signer,
+          {
+            // @ts-ignore
+            gasPrice: GasPrice.fromString(
+              `${feeInfo.average_gas_price}${feeInfo.denom}`
+            ),
+          }
+        );
 
-      txHash = tx.transactionHash;
+        const tx = await client.signAndBroadcast(msgJSON.sender, [msg], {
+          amount: [coin(0, feeInfo.denom)],
+          gas: `${gasNeeded}`,
+        });
+
+        txHash = tx.transactionHash;
+      }
     }
 
     await leapClient.skipClient.transaction.track(txHash, multiHopMsg.chain_id);
