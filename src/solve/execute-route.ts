@@ -15,6 +15,8 @@ import {
   createCosmosMessageMsgEthereumTx,
   signAndBroadcastEvmosRaw,
 } from "@/utils/utils";
+
+import { evmosToEth } from "@evmos/address-converter";
 import { getBigInt, keccak256 } from "ethers";
 
 import {
@@ -32,12 +34,10 @@ import Long from "long";
 import { OfflineAminoSigner } from "@keplr-wallet/types";
 import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
 import { MsgsResponse } from "./client";
-import {
-  PostBuildRequestDto,
-  MetamaskTransaction,
-} from "./types";
+import { PostBuildRequestDto, MetamaskTransaction } from "./types";
 
 import { ethers } from "ethers";
+import { MsgEthereumTx } from "@evmos/proto/dist/proto/ethermint/evm/tx";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -111,58 +111,113 @@ export async function executeRoute(
     userAddresses[chainID] = address;
   }
 
-  let evmSenderAddr;
-  let evmTx;
-  let evmMsgsResponse: MsgsResponse;
+  let evmExtensionMsgs: MsgsResponse | undefined = undefined;
   if (getEVMChainId(route.source_asset_chain_id) != 0) {
-    const account = await getAccount(walletClient, route.source_asset_chain_id);
-    const pk = Buffer.from(account.pubkey).toString("base64");
-    evmSenderAddr = "0x" + keccak256(pk).slice(20);
-    const { nonce, gasPrice } = await getEVMConfig(
-      evmSenderAddr,
-      route.source_asset_chain_id
-    );
-    const buildResult: MetamaskTransaction = await buildEVMHexData(
-      leapClient,
-      evmSenderAddr,
-      route
-    );
+    const cosmoTargetChainTokenIn: string =
+      tokenChainMap[route.source_asset_chain_id][
+        cosmoToERCMap[route.source_asset_chain_id][route.source_asset_denom]
+          .name
+      ];
+    const cosmoTargetChainTokenOut: string =
+      tokenChainMap[route.source_asset_chain_id][
+        cosmoToERCMap[route.dest_asset_chain_id][route.dest_asset_denom].name
+      ];
 
-    evmTx = await createCosmosMessageMsgEthereumTx(
-      route.source_asset_chain_id,
-      getBigInt(nonce),
-      gasPrice,
-      getBigInt(buildResult.gasLimit),
-      buildResult.to,
-      getBigInt(buildResult.value),
-      buildResult.data,
-      evmSenderAddr
-    );
+    const ercTokenInAddr: string =
+      cosmoToERCMap[route.source_asset_chain_id][cosmoTargetChainTokenIn]
+        .address;
+    const ercTokenOutAddr: string =
+      cosmoToERCMap[route.source_asset_chain_id][cosmoTargetChainTokenOut]
+        .address;
+
+    if (ercTokenInAddr && ercTokenOutAddr) {
+      const account = await getAccount(
+        walletClient,
+        route.source_asset_chain_id
+      );
+
+      const evmSenderAddr = evmosToEth(account.address);
+      const { nonce, gasPrice } = await getEVMConfig(
+        evmSenderAddr,
+        route.source_asset_chain_id
+      );
+      const buildResult: MetamaskTransaction = await buildEVMHexData(
+        leapClient,
+        evmSenderAddr,
+        route
+      );
+
+      const evmTx = await createCosmosMessageMsgEthereumTx(
+        route.source_asset_chain_id,
+        getBigInt(nonce),
+        gasPrice,
+        getBigInt(buildResult.gasLimit),
+        buildResult.to,
+        getBigInt(buildResult.value),
+        buildResult.data,
+        evmSenderAddr
+      );
+
+      const evmMsg = {
+        chain_id: route.source_asset_chain_id,
+        path: [route.source_asset_chain_id],
+        msg: evmTx.toJsonString(),
+        msg_type_url: "/ethermint.evm.v1.DynamicFeeTx",
+      };
+      evmExtensionMsgs = {
+        msgs: [evmMsg],
+      };
+
+      if (route.source_asset_chain_id !== route.dest_asset_chain_id) {
+        const msgRequest: MsgsRequest = {
+          source_asset_denom: cosmoTargetChainTokenOut,
+          source_asset_chain_id: route.source_asset_chain_id,
+          dest_asset_denom: route.dest_asset_denom,
+          dest_asset_chain_id: route.dest_asset_chain_id,
+          amount_in: route.estimated_amount_out?.toString() ?? "0",
+          chain_ids_to_addresses: userAddresses,
+          operations: route.operations,
+
+          estimated_amount_out: route.estimated_amount_out,
+          slippage_tolerance_percent: "5.0",
+          affiliates: [],
+        };
+
+        const connectorWithSkipMsgs =
+          await leapClient.skipClient.fungible.getMessages(msgRequest);
+        evmExtensionMsgs.msgs = [
+          ...evmExtensionMsgs.msgs,
+          ...connectorWithSkipMsgs.msgs,
+        ];
+      }
+    }
   }
 
-  const msgRequest: MsgsRequest = {
-    source_asset_denom: route.source_asset_denom,
-    source_asset_chain_id: route.source_asset_chain_id,
-    dest_asset_denom: route.dest_asset_denom,
-    dest_asset_chain_id: route.dest_asset_chain_id,
-    amount_in: route.amount_in,
-    chain_ids_to_addresses: userAddresses,
-    operations: route.operations,
+  if (!evmExtensionMsgs) {
+    const msgRequest: MsgsRequest = {
+      source_asset_denom: route.source_asset_denom,
+      source_asset_chain_id: route.source_asset_chain_id,
+      dest_asset_denom: route.dest_asset_denom,
+      dest_asset_chain_id: route.dest_asset_chain_id,
+      amount_in: route.amount_in,
+      chain_ids_to_addresses: userAddresses,
+      operations: route.operations,
 
-    estimated_amount_out: route.estimated_amount_out,
-    slippage_tolerance_percent: "5.0",
-    affiliates: [],
-  };
+      estimated_amount_out: route.estimated_amount_out,
+      slippage_tolerance_percent: "5.0",
+      affiliates: [],
+    };
 
-  const msgsResponse = await leapClient.skipClient.fungible.getMessages(
-    msgRequest
-  );
+    evmExtensionMsgs = await leapClient.skipClient.fungible.getMessages(
+      msgRequest
+    );
+  }
 
   // const tx = await client.evm.postBuild(postBuildRequestDto);
 
   // check balances on chains where a tx is initiated
-  for (let i = 0; i < msgsResponse.msgs.length; i++) {
-    const multiHopMsg = msgsResponse.msgs[i];
+  for (let i = 0; i < evmExtensionMsgs.msgs.length; i++) {
+    const multiHopMsg = evmExtensionMsgs.msgs[i];
 
     const chain = getChainByID(multiHopMsg.chain_id);
 
@@ -187,22 +242,32 @@ export async function executeRoute(
       averageGasPrice = feeInfo.average_gas_price;
     }
 
-    const amountNeeded = averageGasPrice * gasNeeded;
+    let amountNeeded = getBigInt(0);
+    if (multiHopMsg.msg_type_url === "/ethermint.evm.v1.DynamicFeeTx") {
+      if (
+        cosmoToERCMap[multiHopMsg.chain_id][route.source_asset_denom]
+          .address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+      ) {
+        amountNeeded += getBigInt(route.amount_in);
+      }
+    }
+
+    amountNeeded += getBigInt(averageGasPrice * gasNeeded);
 
     const balance = await client.getBalance(
       userAddresses[multiHopMsg.chain_id],
       feeInfo.denom
     );
 
-    if (parseInt(balance.amount) < amountNeeded) {
+    if (getBigInt(balance.amount) < amountNeeded) {
       throw new Error(
         `Insufficient fee token to initiate transfer on ${multiHopMsg.chain_id}. Need ${amountNeeded} ${feeInfo.denom}, but only have ${balance.amount} ${feeInfo.denom}.`
       );
     }
   }
 
-  for (let i = 0; i < msgsResponse.msgs.length; i++) {
-    const multiHopMsg = msgsResponse.msgs[i];
+  for (let i = 0; i < evmExtensionMsgs.msgs.length; i++) {
+    const multiHopMsg = evmExtensionMsgs.msgs[i];
 
     const signerIsLedger = await isLedger(walletClient, multiHopMsg.chain_id);
 
@@ -366,10 +431,12 @@ export async function executeRoute(
           route.source_asset_chain_id
         );
 
-        if (evmTx) {
-          const tx = await signAndBroadcastEvmosRaw(walletClient, account.address, evmTx);
-          txHash = tx.transactionHash;
-        }
+        const tx = await signAndBroadcastEvmosRaw(
+          walletClient,
+          account.address,
+          MsgEthereumTx.fromJsonString(multiHopMsg.msg)
+        );
+        txHash = tx.transactionHash;
       } else {
         msg = {
           typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
