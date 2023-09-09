@@ -7413,6 +7413,7 @@ export const ASSETS_RESPONSE = {
           chain_id: "evmos_9001-2",
           origin_denom: "erc20/0x655ecB57432CC1370f65e5dc2309588b71b473A9",
           origin_chain_id: "evmos_9001-2",
+          evm_address: "0x655ecB57432CC1370f65e5dc2309588b71b473A9",
           trace: "",
           symbol: "NEOK",
           name: "NEOK",
@@ -7500,6 +7501,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "gravity0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
           origin_chain_id: "gravity-bridge-3",
           trace: "transfer/channel-8",
+          evm_address: "0xc03345448969Dd8C00e9E4A85d2d9722d093aF8E",
           symbol: "gWETH",
           name: "gWETH",
           logo_uri:
@@ -7547,6 +7549,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "stuatom",
           origin_chain_id: "stride-1",
           trace: "transfer/channel-25",
+          evm_address: "0xB5124FA2b2cF92B2D469b249433BA1c96BDF536D",
           symbol: "stATOM",
           name: "stATOM",
           logo_uri:
@@ -7586,6 +7589,8 @@ export const ASSETS_RESPONSE = {
           origin_denom: "wbtc-satoshi",
           origin_chain_id: "axelar-dojo-1",
           trace: "transfer/channel-21",
+          evm_address: "0xF5b24c0093b65408ACE53df7ce86a02448d53b25",
+
           symbol: "axlWBTC",
           name: "axlWBTC",
           logo_uri:
@@ -7612,6 +7617,8 @@ export const ASSETS_RESPONSE = {
           origin_denom: "gravity0xdAC17F958D2ee523a2206206994597C13D831ec7",
           origin_chain_id: "gravity-bridge-3",
           trace: "transfer/channel-8",
+          evm_address: "0xecEEEfCEE421D8062EF8d6b4D814efe4dc898265",
+
           symbol: "gUSDT",
           name: "gUSDT",
           logo_uri:
@@ -7646,6 +7653,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "uosmo",
           origin_chain_id: "osmosis-1",
           trace: "transfer/channel-0",
+          evm_address: "0xFA3C22C069B9556A4B2f7EcE1Ee3B467909f4864",
           symbol: "OSMO",
           name: "OSMO",
           logo_uri:
@@ -7659,6 +7667,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "stujuno",
           origin_chain_id: "stride-1",
           trace: "transfer/channel-25",
+          evm_address: "0xc71aAf8e486e3F33841BB56Ca3FD2aC3fa8D29a8",
           symbol: "stJUNO",
           name: "stJUNO",
           logo_uri:
@@ -7693,6 +7702,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "weth-wei",
           origin_chain_id: "axelar-dojo-1",
           trace: "transfer/channel-21",
+          evm_address: "0x50dE24B3f0B3136C50FA8A3B8ebc8BD80a269ce5",
           symbol: "axlWETH",
           name: "axlWETH",
           logo_uri:
@@ -7732,6 +7742,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "ustrd",
           origin_chain_id: "stride-1",
           trace: "transfer/channel-25",
+          evm_address: "0x8FA78CEB7F04118Ec6d06AaC37Ca854691d8e963",
           symbol: "STRD",
           name: "STRD",
           logo_uri:
@@ -7745,6 +7756,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "staevmos",
           origin_chain_id: "stride-1",
           trace: "transfer/channel-25",
+          evm_address: "0x2C68D1d6aB986Ff4640b51e1F14C716a076E44C4",
           symbol: "stEVMOS",
           name: "stEVMOS",
           logo_uri:
@@ -7787,6 +7799,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "stustars",
           origin_chain_id: "stride-1",
           trace: "transfer/channel-25",
+          evm_address: "0xc7e56EEc629D3728fE41baCa2f6BFc502096f94E",
           symbol: "stSTARS",
           name: "stSTARS",
           logo_uri:
@@ -7834,6 +7847,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "stuosmo",
           origin_chain_id: "stride-1",
           trace: "transfer/channel-25",
+          evm_address: "0xD32eB974468ed767338533842D2D4Cc90B9BAb46",
           symbol: "stOSMO",
           name: "stOSMO",
           logo_uri:
@@ -7947,6 +7961,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "uusdc",
           origin_chain_id: "axelar-dojo-1",
           trace: "transfer/channel-21",
+          evm_address: "0x15C3Eb3B621d1Bff62CbA1c9536B7c1AE9149b57",
           symbol: "axlUSDC",
           name: "axlUSDC",
           logo_uri:
@@ -7960,6 +7975,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "gravity0x6B175474E89094C44Da98b954EedeAC495271d0F",
           origin_chain_id: "gravity-bridge-3",
           trace: "transfer/channel-8",
+          evm_address: "0xd567B3d7B8FE3C79a1AD8dA978812cfC4Fa05e75",
           symbol: "gDAI",
           name: "gDAI",
           logo_uri:
@@ -8012,6 +8028,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "inj",
           origin_chain_id: "injective-1",
           trace: "transfer/channel-10",
+          evm_address: "0x3515F25AB7637adcF1b69F4D384ed5936B83431F",
           symbol: "INJ",
           name: "INJ",
           logo_uri:
@@ -8025,6 +8042,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "ustars",
           origin_chain_id: "stargaze-1",
           trace: "transfer/channel-13",
+          evm_address: "0x5aD523d94Efb56C400941eb6F34393b84c75ba39",
           symbol: "STARS",
           name: "STARS",
           logo_uri:
@@ -8090,6 +8108,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "uatom",
           origin_chain_id: "cosmoshub-4",
           trace: "transfer/channel-3",
+          evm_address: "0xC5e00D3b04563950941f7137B5AfA3a534F0D6d6",
           symbol: "ATOM",
           name: "ATOM",
           logo_uri:
@@ -8103,6 +8122,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "gravity0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
           origin_chain_id: "gravity-bridge-3",
           trace: "transfer/channel-8",
+          evm_address: "0x1D54EcB8583Ca25895c512A8308389fFD581F9c9",
           symbol: "gWBTC",
           name: "gWBTC",
           logo_uri:
@@ -8144,6 +8164,7 @@ export const ASSETS_RESPONSE = {
           chain_id: "evmos_9001-2",
           origin_denom: "ugraviton",
           origin_chain_id: "gravity-bridge-3",
+          evm_address: "0x80b5a32e4f032b2a058b4f29ec95eefeeb87adcd",
           trace: "transfer/channel-8",
           symbol: "GRAV",
           name: "GRAV",
@@ -8157,6 +8178,7 @@ export const ASSETS_RESPONSE = {
           chain_id: "evmos_9001-2",
           origin_denom: "ujuno",
           origin_chain_id: "juno-1",
+          evm_address: "0x3452e23F9c4cC62c70B7ADAd699B264AF3549C19",
           trace: "transfer/channel-5",
           symbol: "JUNO",
           name: "JUNO",
