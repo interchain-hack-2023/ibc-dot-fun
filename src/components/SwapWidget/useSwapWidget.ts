@@ -5,7 +5,7 @@ import {
   AssetWithMetadata,
   getNumberOfTransactionsFromRoute,
   useRoute,
-  useSkipClient,
+  useLeapClient,
 } from "@/solve";
 import { useChain } from "@cosmos-kit/react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,7 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 export const LAST_SOURCE_CHAIN_KEY = "IBC_DOT_FUN_LAST_SOURCE_CHAIN";
 
 export function useSwapWidget() {
-  const skipClient = useSkipClient();
+  const leapClient = useLeapClient();
 
   const {
     formValues,
@@ -45,7 +45,7 @@ export function useSwapWidget() {
     fetchStatus: routeFetchStatus,
     isError,
   } = useRoute(
-    skipClient,
+    leapClient,
     amountInWei,
     formValues.sourceAsset?.denom,
     formValues.sourceAsset?.chain_id,

@@ -1,12 +1,12 @@
 import { useContext } from "react";
-import { SkipContext } from "./context";
+import { LeapContext } from "./context";
 
-export function useSkipClient() {
-  const context = useContext(SkipContext);
+export function useLeapClient() {
+  const context = useContext(LeapContext);
 
   if (context === undefined) {
-    throw new Error("useSkipClient must be used within a SkipProvider");
+    throw new Error("useLeapClient must be used within a LeapProvider");
   }
 
-  return context.skipClient;
+  return context.leapClient;
 }

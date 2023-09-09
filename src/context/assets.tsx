@@ -10,7 +10,7 @@ import {
   Asset,
   AssetWithMetadata,
   filterAssetsWithMetadata,
-  useSkipClient,
+  useLeapClient,
   useAssets as useSolveAssets,
 } from "../solve";
 
@@ -51,11 +51,11 @@ function getAssetSymbol(
 }
 
 export const AssetsProvider: FC<PropsWithChildren> = ({ children }) => {
-  const skipClient = useSkipClient();
+  const leapClient = useLeapClient();
 
   const { chains } = useChains();
 
-  const { data: solveAssets } = useSolveAssets(skipClient);
+  const { data: solveAssets } = useSolveAssets(leapClient);
 
   const assets = useMemo(() => {
     if (!solveAssets) {

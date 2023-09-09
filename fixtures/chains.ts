@@ -647,6 +647,7 @@ export const CHAINS_RESPONSE = {
     {
       chain_name: "cronos",
       chain_id: "cronosmainnet_25-1",
+      evm_chain_id: 25,
       pfm_enabled: false,
       cosmos_sdk_version: "v0.46.7",
       modules: {
@@ -806,6 +807,7 @@ export const CHAINS_RESPONSE = {
     {
       chain_name: "evmos",
       chain_id: "evmos_9001-2",
+      evm_chain_id: 9001,
       pfm_enabled: false,
       cosmos_sdk_version: "v0.46.12",
       modules: {

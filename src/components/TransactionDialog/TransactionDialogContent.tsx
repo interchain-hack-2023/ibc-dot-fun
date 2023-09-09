@@ -3,7 +3,7 @@ import { useChain, useManager } from "@cosmos-kit/react";
 import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/20/solid";
 import Toast from "@/elements/Toast";
 import RouteDisplay from "../RouteDisplay";
-import { RouteResponse, useSkipClient } from "@/solve";
+import { RouteResponse, useLeapClient } from "@/solve";
 import { useToast } from "@/context/toast";
 import { getChainByID } from "@/utils/utils";
 import { executeRoute } from "@/solve/execute-route";
@@ -89,7 +89,7 @@ const TransactionDialogContent: FC<Props> = ({
   insufficentBalance,
   transactionCount,
 }) => {
-  const skipClient = useSkipClient();
+  const leapClient = useLeapClient();
 
   const { toast } = useToast();
 
@@ -143,7 +143,7 @@ const TransactionDialogContent: FC<Props> = ({
       }
 
       await executeRoute(
-        skipClient,
+        leapClient,
         walletClient,
         route,
         (_, i) => {

@@ -7425,6 +7425,7 @@ export const ASSETS_RESPONSE = {
           chain_id: "evmos_9001-2",
           origin_denom: "aevmos",
           origin_chain_id: "evmos_9001-2",
+          native: true,
           trace: "",
           symbol: "EVMOS",
           name: "EVMOS",

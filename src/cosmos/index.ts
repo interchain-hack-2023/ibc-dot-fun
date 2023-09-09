@@ -48,6 +48,12 @@ export function useBalancesByChain(
 
       const balances = await getBalancesByChain(address, chain.chain_id);
 
+      if (
+        chain.chain_id === "evmos_9000-1" ||
+        chain.chain_id === "cronosmainnet_25-1"
+      ) {
+      }
+
       return balances;
     },
     refetchInterval: false,

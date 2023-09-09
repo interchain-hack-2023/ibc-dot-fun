@@ -16,7 +16,7 @@ import { EncodeObject, OfflineSigner, coin } from "@cosmjs/proto-signing";
 import { GasPrice, DeliverTxResponse } from "@cosmjs/stargate";
 import { MsgTransfer as MsgTransferInjective } from "@injectivelabs/sdk-ts";
 import { WalletClient } from "@cosmos-kit/core";
-import { SkipClient, MsgsRequest, RouteResponse } from "./client";
+import { LeapClient, MsgsRequest, RouteResponse } from "./client";
 import Long from "long";
 import { OfflineAminoSigner } from "@keplr-wallet/types";
 import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
@@ -24,7 +24,7 @@ import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function executeRoute(
-  skipClient: SkipClient,
+  leapClient: LeapClient,
   walletClient: WalletClient,
   route: RouteResponse,
   onTxSuccess: (tx: any, index: number) => void,
@@ -55,7 +55,9 @@ export async function executeRoute(
     affiliates: [],
   };
 
-  const msgsResponse = await skipClient.fungible.getMessages(msgRequest);
+  const msgsResponse = await leapClient.skipClient.fungible.getMessages(
+    msgRequest
+  );
 
   // check balances on chains where a tx is initiated
   for (let i = 0; i < msgsResponse.msgs.length; i++) {
@@ -283,10 +285,10 @@ export async function executeRoute(
       txHash = tx.transactionHash;
     }
 
-    await skipClient.transaction.track(txHash, multiHopMsg.chain_id);
+    await leapClient.skipClient.transaction.track(txHash, multiHopMsg.chain_id);
 
     while (true) {
-      const statusResponse = await skipClient.transaction.status(
+      const statusResponse = await leapClient.skipClient.transaction.status(
         txHash,
         multiHopMsg.chain_id
       );
