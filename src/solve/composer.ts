@@ -5,10 +5,10 @@ import { useRoute, useEVMRoute } from "./queries";
 import { useQuery } from "@tanstack/react-query";
 import { WalletClient } from "@cosmos-kit/core";
 import chainIdToVenueNameMap from "../utils/utils";
-import { getEVMChainId, cosmoToERCMap, evmosToEth } from './utils'
+import { getEVMChainId, cosmoToERCMap, evmosToEth } from "./utils";
 import { getChainByID } from "@/utils/utils";
 import { WalletAccount } from "@cosmos-kit/core";
-import { use } from 'react'
+import { use } from "react";
 import { OperationWithERC20Convert, Operation } from "./types";
 import { ercToCosmoMap, tokenChainMap, cosmoToErcChainIdMap } from "./utils";
 import { SWAP_VENUES } from "@/config";
@@ -19,7 +19,7 @@ function makeConvertERC20RouteResponse(
   amount: string,
   asset: string,
   assetChainId: string,
-  account: WalletAccount,
+  account: WalletAccount
 ) {
   const venueName = chainIdToVenueNameMap.get(assetChainId);
 
@@ -46,7 +46,7 @@ function makeConvertERC20RouteResponse(
     },
     transfer: undefined,
     swap: undefined,
-  }
+  };
 
   return {
     source_asset_denom: asset,
@@ -67,7 +67,7 @@ async function makeEVMRouteResponse(
   sourceAsset?: string,
   sourceAssetChainID?: string,
   destinationAsset?: string,
-  destinationAssetChainID?: string,
+  destinationAssetChainID?: string
 ) {
   if (
     !sourceAsset ||
@@ -77,6 +77,7 @@ async function makeEVMRouteResponse(
   ) {
     return;
   }
+
   const targetChainId: string = sourceAssetChainID;
 
   const cosmoTargetChainTokenIn: string =
@@ -107,24 +108,24 @@ async function makeEVMRouteResponse(
     tokenOutAddr: ercTokenOutAddr,
     from: "",
     /**
-      * TODO: decimals
-      */
+     * TODO: decimals
+     */
     amount: amountIn,
     /**
-      * slippage tolerance 10000 => 100%, 30 => 0.3%
-      */
+     * slippage tolerance 10000 => 100%, 30 => 0.3%
+     */
     slippageBps: 100,
     /**
-      * amount max split
-      */
+     * amount max split
+     */
     maxSplit: 15,
     /**
-      * max edge of graph
-      */
+     * max edge of graph
+     */
     maxEdge: 3,
     /**
-      * set true if Flash Loan(false if normal swap)
-      */
+     * set true if Flash Loan(false if normal swap)
+     */
     withCycle: false,
   };
 
@@ -138,9 +139,7 @@ async function makeEVMRouteResponse(
     swap: {
       swap_in: {
         swap_venue: {
-          name: SWAP_VENUES[
-            chainIdToVenueNameMap.get(sourceAssetChainID) as string
-          ].name,
+          name: "EVMswap",
           chain_id: sourceAssetChainID,
         },
         swap_operations: [
@@ -169,9 +168,7 @@ async function makeEVMRouteResponse(
     does_swap: true,
     estimated_amount_out: route.dexAgg.expectedAmountOut,
     swap_venue: {
-      name: SWAP_VENUES[
-        chainIdToVenueNameMap.get(sourceAssetChainID) as string
-      ].name,
+      name: "EVMswap",
       chain_id: sourceAssetChainID,
     },
     dex_aggregate: route.dexAgg,
@@ -190,7 +187,6 @@ export function useComposedRoute(
   walletClient?: WalletClient,
   enabled?: boolean
 ) {
-
   return useQuery({
     queryKey: [
       "solve-composed-route",
@@ -200,15 +196,15 @@ export function useComposedRoute(
       destinationAsset,
       destinationAssetChainID,
       walletClient,
-      enabled
+      enabled,
     ],
     queryFn: async () => {
       if (
         !sourceAsset ||
-          !sourceAssetChainID ||
-          !destinationAsset ||
-          !destinationAssetChainID ||
-          !walletClient?.getAccount
+        !sourceAssetChainID ||
+        !destinationAsset ||
+        !destinationAssetChainID ||
+        !walletClient?.getAccount
       ) {
         return;
       }
@@ -271,11 +267,11 @@ export function useComposedRoute(
           operations: [
             ...evmRouteResponse.operations,
             ...convertRouteResponse.operations,
-            ...routeResponse.operations
+            ...routeResponse.operations,
           ],
           estimated_amount_out: routeResponse.estimated_amount_out,
           chain_ids: [],
-          does_swap: true
+          does_swap: true,
         };
 
         return fullRouteResponse;

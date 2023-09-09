@@ -117,11 +117,11 @@ function getTokenChainMap() {
   for (const chainID in ASSETS_MAP) {
     ASSETS_MAP[chainID].assets.forEach((assetItem) => {
       if (assetItem.name) {
-        if (!dictionary[assetItem.name]) {
-          dictionary[assetItem.name] = {};
-          dictionary[assetItem.name][chainID] = assetItem.denom;
+        if (!dictionary[chainID]) {
+          dictionary[chainID] = {};
+          dictionary[chainID][assetItem.name] = assetItem.denom;
         } else {
-          dictionary[assetItem.name][chainID] = assetItem.denom;
+          dictionary[chainID][assetItem.name] = assetItem.denom;
         }
       }
     });
@@ -237,47 +237,46 @@ export const queryKeys = {
   },
 };
 
-
 function makeBech32Encoder(prefix: string) {
-  return (data: Buffer) => bech32.encode(prefix, bech32.toWords(data))
+  return (data: Buffer) => bech32.encode(prefix, bech32.toWords(data));
 }
 
 function makeBech32Decoder(currentPrefix: string) {
   return (data: string) => {
-    const { prefix, words } = bech32.decode(data)
+    const { prefix, words } = bech32.decode(data);
     if (prefix !== currentPrefix) {
-      throw Error('Unrecognised address format')
+      throw Error("Unrecognised address format");
     }
-    return Buffer.from(bech32.fromWords(words))
-  }
+    return Buffer.from(bech32.fromWords(words));
+  };
 }
 
 const bech32Chain = (name: string, prefix: string) => ({
   decoder: makeBech32Decoder(prefix),
   encoder: makeBech32Encoder(prefix),
   name,
-})
+});
 
-export const EVMOS = bech32Chain('EVMOS', 'evmos')
+export const EVMOS = bech32Chain("EVMOS", "evmos");
 
 export const ethToEvmos = (ethAddress: string) => {
-  const data = ETH.decoder(ethAddress)
-  return EVMOS.encoder(data)
-}
+  const data = ETH.decoder(ethAddress);
+  return EVMOS.encoder(data);
+};
 
 export const evmosToEth = (evmosAddress: string) => {
-  const data = EVMOS.decoder(evmosAddress)
-  return ETH.encoder(data)
-}
+  const data = EVMOS.decoder(evmosAddress);
+  return ETH.encoder(data);
+};
 
-export const CRONOS = bech32Chain('CRONOS', 'cronos')
+export const CRONOS = bech32Chain("CRONOS", "cronos");
 
 export const ethToCronos = (ethAddress: string) => {
-  const data = ETH.decoder(ethAddress)
-  return EVMOS.encoder(data)
-}
+  const data = ETH.decoder(ethAddress);
+  return EVMOS.encoder(data);
+};
 
 export const cronosToEth = (evmosAddress: string) => {
-  const data = EVMOS.decoder(evmosAddress)
-  return ETH.encoder(data)
-}
+  const data = EVMOS.decoder(evmosAddress);
+  return ETH.encoder(data);
+};

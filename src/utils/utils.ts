@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { EthSignType } from '@keplr-wallet/types';
+import { EthSignType } from "@keplr-wallet/types";
 import {
   EncodeObject,
   OfflineSigner,
@@ -242,7 +242,9 @@ export async function createCosmosMessageMsgEthereumTx(
       to: to,
       value: Number(value),
       data: data,
-    }), EthSignType.TRANSACTION);
+    }),
+    EthSignType.TRANSACTION
+  );
 
   assert(signature.length === 65, "signature length is invalid");
 
@@ -257,7 +259,9 @@ export async function createCosmosMessageMsgEthereumTx(
     value: value,
     data: data,
     signature: {
-      r: ethers.hexlify(r), s: ethers.hexlify(s), v: ethers.hexlify(v),
+      r: ethers.hexlify(r),
+      s: ethers.hexlify(s),
+      v: ethers.hexlify(v),
     },
   };
 
@@ -652,5 +656,7 @@ const chainIdToVenueNameMap = new Map<string, string>();
 
 chainIdToVenueNameMap.set("evmos_9001-1", "evmos-dex");
 chainIdToVenueNameMap.set("cronosmainnet_25-1", "cronos-dex");
+chainIdToVenueNameMap.set("neutron-1", "neutron-astroport");
+chainIdToVenueNameMap.set("osmosis-1", "osmosis-poolmanager");
 
 export default chainIdToVenueNameMap;

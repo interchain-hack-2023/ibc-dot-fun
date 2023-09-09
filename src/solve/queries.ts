@@ -189,9 +189,7 @@ export function useEVMRoute(
         swap: {
           swap_in: {
             swap_venue: {
-              name: SWAP_VENUES[
-                chainIdToVenueNameMap.get(sourceAssetChainID) as string
-              ].name,
+              name: "EVMswap",
               chain_id: sourceAssetChainID,
             },
             swap_operations: [
@@ -220,9 +218,7 @@ export function useEVMRoute(
         does_swap: true,
         estimated_amount_out: route.dexAgg.expectedAmountOut,
         swap_venue: {
-          name: SWAP_VENUES[
-            chainIdToVenueNameMap.get(sourceAssetChainID) as string
-          ].name,
+          name: "EVMswap",
           chain_id: sourceAssetChainID,
         },
         dex_aggregate: route.dexAgg,
