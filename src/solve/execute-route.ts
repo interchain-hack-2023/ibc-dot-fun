@@ -367,7 +367,8 @@ export async function executeRoute(
         );
 
         if (evmTx) {
-          await signAndBroadcastEvmosRaw(walletClient, account.address, evmTx);
+          const tx = await signAndBroadcastEvmosRaw(walletClient, account.address, evmTx);
+          txHash = tx.transactionHash;
         }
       } else {
         msg = {
