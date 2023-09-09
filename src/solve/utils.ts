@@ -9,6 +9,7 @@ import {
   Chain,
   PostQuoteRequestDto,
   TokenV2,
+  TokenWithName,
 } from "./types";
 import { ethers, BigNumberish } from "ethers";
 import { atom } from "jotai";
@@ -53,19 +54,26 @@ const CHAIN_MAP = CHAINS_RESPONSE.chains;
 // convert token config from cosmos to erc
 export const cosmoToERCMap: Record<
   string,
-  Record<string, string>
+  Record<string, TokenWithName>
 > = getCosmoToErcMap();
 
 function getCosmoToErcMap() {
-  const dictionary: Record<string, Record<string, string>> = {};
+  const dictionary: Record<string, Record<string, TokenWithName>> = {};
   for (const chainID in ASSETS_MAP) {
     if (getEVMChainId(chainID) != 0) {
       ASSETS_MAP[chainID].assets.forEach((assetItem) => {
         if (assetItem.evm_address) {
           if (!dictionary[chainID]) {
             dictionary[chainID] = {};
+            dictionary[chainID][assetItem.denom] = {
+              address: assetItem.evm_address,
+              name: assetItem.name as string,
+            };
           } else {
-            dictionary[chainID][assetItem.denom] = assetItem.evm_address;
+            dictionary[chainID][assetItem.denom] = {
+              address: assetItem.evm_address,
+              name: assetItem.name as string,
+            };
           }
         }
       });
@@ -73,29 +81,56 @@ function getCosmoToErcMap() {
   }
   return dictionary;
 }
-
-function getErcToCosmoMap() {
-  const dictionary: Record<string, Record<string, string>> = {};
-  for (const chainID in ASSETS_MAP) {
-    if (getEVMChainId(chainID) != 0) {
-      ASSETS_MAP[chainID].assets.forEach((assetItem) => {
-        if (assetItem.evm_address) {
-          if (!dictionary[chainID]) {
-            dictionary[chainID] = {};
-          } else {
-            dictionary[chainID][assetItem.evm_address] = assetItem.denom;
-          }
-        }
-      });
-    }
-  }
-  return dictionary;
-}
-
 export const ercToCosmoMap: Record<
   string,
-  Record<string, string>
+  Record<string, TokenWithName>
 > = getErcToCosmoMap();
+function getErcToCosmoMap() {
+  const dictionary: Record<string, Record<string, TokenWithName>> = {};
+  for (const chainID in ASSETS_MAP) {
+    if (getEVMChainId(chainID) != 0) {
+      ASSETS_MAP[chainID].assets.forEach((assetItem) => {
+        if (assetItem.evm_address) {
+          if (!dictionary[chainID]) {
+            dictionary[chainID] = {};
+            dictionary[chainID][assetItem.evm_address] = {
+              address: assetItem.denom,
+              name: assetItem.name as string,
+            };
+          } else {
+            dictionary[chainID][assetItem.evm_address] = {
+              address: assetItem.denom,
+              name: assetItem.name as string,
+            };
+          }
+        }
+      });
+    }
+  }
+  return dictionary;
+}
+
+function getTokenChainMap() {
+  const dictionary: Record<string, Record<string, string>> = {};
+  for (const chainID in ASSETS_MAP) {
+    ASSETS_MAP[chainID].assets.forEach((assetItem) => {
+      if (assetItem.name) {
+        if (!dictionary[assetItem.name]) {
+          dictionary[assetItem.name] = {};
+          dictionary[assetItem.name][chainID] = assetItem.denom;
+        } else {
+          dictionary[assetItem.name][chainID] = assetItem.denom;
+        }
+      }
+    });
+  }
+  return dictionary;
+}
+
+export const tokenChainMap: Record<
+  string,
+  Record<string, string>
+> = getTokenChainMap();
 
 function getCosmoToErcChainIdMap() {
   const dictionary: Record<string, number> = {};

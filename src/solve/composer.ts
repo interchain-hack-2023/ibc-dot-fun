@@ -1,7 +1,8 @@
+import { walletContext } from "@cosmos-kit/react-lite";
 import { LeapClient, RouteResponse } from "./client";
-import { useRoute } from './queries'
+import { useRoute, useEVMRoute } from "./queries";
 import { useQuery } from "@tanstack/react-query";
-
+import { WalletClient } from "@cosmos-kit/core";
 
 const chainIdToVenueNameMap = new Map<string, string>();
 chainIdToVenueNameMap.set("evmos_9001-1", "evmos-dex");
@@ -14,8 +15,8 @@ function useConvertERC20(
   sender: string,
   asset: string,
   assetChainId: string,
-  enabled?: boolean) {
-
+  enabled?: boolean
+) {
   const venueName = chainIdToVenueNameMap.get(assetChainId);
 
   if (!venueName) {
@@ -52,21 +53,22 @@ function useConvertERC20(
                 venue: {
                   name: venueName,
                   chain_id: assetChainId,
-                }
-              }
-            }
-          }
+                },
+              },
+            },
+          },
         ],
         chain_ids: [],
         does_swap: false,
-      }
+      };
     },
     enabled: enabled,
-  })
+  });
 }
 
 export function useComposedRoute(
   client: LeapClient,
+  walletClient: WalletClient,
   amountIn: string,
   sourceAsset?: string,
   sourceAssetChainID?: string,
@@ -74,7 +76,6 @@ export function useComposedRoute(
   destinationAssetChainID?: string,
   enabled?: boolean
 ) {
-
   // const isERC20Source = false;
   // // 1. check if sourceAsset is a ERC20
   // if (!isERC20Source) {
@@ -93,15 +94,16 @@ export function useComposedRoute(
   //
   // // 2. Split path to ERC20 swap and cosmos route path.
   //
-  // const evmRoutes = useRoute(
-  //   client,
-  //   amountIn,
-  //   sourceAsset,
-  //   sourceAssetChainID,
-  //   destinationAsset,
-  //   destinationAssetChainID,
-  //   enabled
-  // );
+  const evmRoutes = useEVMRoute(
+    client,
+    walletClient,
+    amountIn,
+    sourceAsset,
+    sourceAssetChainID,
+    destinationAsset,
+    destinationAssetChainID,
+    enabled
+  );
   //
   // return evmRoutes;
   return useRoute(

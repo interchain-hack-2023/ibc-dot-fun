@@ -140,6 +140,7 @@ export async function executeRoute(
     if (
       multiHopMsg.msg_type_url === "/ibc.applications.transfer.v1.MsgTransfer"
     ) {
+      // transfer using ibc
       let gasPrice: GasPrice | undefined;
       try {
         gasPrice = GasPrice.fromString(
@@ -256,6 +257,7 @@ export async function executeRoute(
         txHash = tx.transactionHash;
       }
     } else {
+      /// execute msg using cosmwasm
       msg = {
         typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
         value: {

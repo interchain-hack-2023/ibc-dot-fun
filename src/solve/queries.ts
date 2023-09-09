@@ -1,13 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { LeapClient } from "./client";
-import { PostQuoteRequestDto } from "./types";
+import {
+  PostQuoteRequestDto,
+  PostBuildRequestDto,
+  MultiChainMsg,
+} from "./types";
+import { RouteResponse } from "./client";
 import { atom, useAtomValue } from "jotai";
 import { useDebounce } from "./hooks";
-import { cosmoToERCMap, ercToCosmoMap, cosmoToErcChainIdMap } from "./utils";
+import {
+  cosmoToERCMap,
+  ercToCosmoMap,
+  cosmoToErcChainIdMap,
+  tokenChainMap,
+} from "./utils";
 import { WalletClient } from "@cosmos-kit/core";
 import { get } from "http";
 import { getAccount } from "@/utils/utils";
 import { use } from "react";
+import { keccak256 } from "ethers";
+import { Route } from "next";
+
+import { SWAP_VENUES } from "@/config";
 export function useAssets(client: LeapClient) {
   return useQuery({
     queryKey: ["solve-assets"],
@@ -95,7 +109,6 @@ export function useEVMRoute(
   sourceAssetChainID?: string,
   destinationAsset?: string,
   destinationAssetChainID?: string,
-  useSourceAmount?: boolean,
   enabled?: boolean
 ) {
   return useQuery({
@@ -116,26 +129,40 @@ export function useEVMRoute(
       ) {
         return;
       }
-      if (!useSourceAmount) {
-        useSourceAmount = true;
-      }
+      const targetChainId: string = sourceAssetChainID;
 
-      const targetChainId: string = useSourceAmount
-        ? sourceAssetChainID
-        : destinationAssetChainID;
+      const cosmoTargetChainTokenIn =
+        tokenChainMap[targetChainId][
+          cosmoToERCMap[targetChainId][sourceAsset].name
+        ];
+      const cosmoTargetChainTokenOut =
+        tokenChainMap[targetChainId][
+          cosmoToERCMap[targetChainId][destinationAsset].name
+        ];
 
-      if (!cosmoToErcChainIdMap[targetChainId]) {
+      const ercTokenInAddr =
+        cosmoToERCMap[targetChainId][cosmoTargetChainTokenIn].address;
+      const ercTokenOutAddr =
+        cosmoToERCMap[targetChainId][cosmoTargetChainTokenOut].address;
+
+      if (
+        !cosmoToErcChainIdMap[targetChainId] ||
+        !ercTokenInAddr ||
+        !ercTokenOutAddr
+      ) {
         return;
       }
 
       const account = await getAccount(walletClient, targetChainId);
       const pk = Buffer.from(account.pubkey).toString("base64");
 
+      const evmSenderAddr = keccak256(pk).slice(20);
+
       const postQuoteRequest: PostQuoteRequestDto = {
         chainId: cosmoToErcChainIdMap[targetChainId],
-        tokenInAddr: cosmoToERCMap[targetChainId][sourceAsset],
-        tokenOutAddr: cosmoToERCMap[targetChainId][destinationAsset],
-        from: pk,
+        tokenInAddr: ercTokenInAddr,
+        tokenOutAddr: ercTokenOutAddr,
+        from: evmSenderAddr,
         /**
          * TODO: decimals
          */
@@ -160,11 +187,36 @@ export function useEVMRoute(
 
       const route = await client.evm.postQuoteV2(postQuoteRequest);
 
-      // if (!route.operations) {
-      //   throw new Error("No route found");
-      // }
+      if (!route.isSwapPathExists) {
+        throw new Error("No route found");
+      }
 
-      // return route;
+      const result: RouteResponse = {
+        source_asset_denom: sourceAsset,
+        source_asset_chain_id: sourceAssetChainID,
+        dest_asset_denom: destinationAsset,
+        dest_asset_chain_id: destinationAssetChainID,
+        amount_in: amountIn,
+        operations: [],
+        chain_ids: [sourceAssetChainID],
+        does_swap: true,
+        estimated_amount_out: route.dexAgg.expectedAmountOut,
+      };
+
+      // const postBuildRequestDto: PostBuildRequestDto = {
+      //   chainId: cosmoToErcChainIdMap[targetChainId],
+      //   tokenInAddr: cosmoToERCMap[targetChainId][sourceAsset],
+      //   tokenOutAddr: cosmoToERCMap[targetChainId][destinationAsset],
+      //   from: evmSenderAddr,
+      //   amount: amountIn,
+      //   slippageBps: 100,
+      //   maxSplit: 15,
+      //   dexAgg: route.dexAgg,
+      // };
+
+      // const tx = await client.evm.postBuild(postBuildRequestDto);
+
+      return result;
     },
     refetchInterval: false,
     refetchOnMount: false,
