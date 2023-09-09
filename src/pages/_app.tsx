@@ -17,7 +17,7 @@ import { ChainsProvider } from "@/context/chains";
 import { AssetsProvider } from "@/context/assets";
 import { queryClient } from "@/utils/query";
 import { ToastProvider } from "@/context/toast";
-import { SkipProvider } from "@/solve";
+import { LeapProvider } from "@/solve";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -181,7 +181,7 @@ export default function App({ Component, pageProps }: AppProps) {
         />
       </Head>
       <main className={jost.className}>
-        <SkipProvider>
+        <LeapProvider>
           <QueryClientProvider client={queryClient}>
             <ChainProvider
               chains={chains}
@@ -204,7 +204,7 @@ export default function App({ Component, pageProps }: AppProps) {
               </ChainsProvider>
             </ChainProvider>
           </QueryClientProvider>
-        </SkipProvider>
+        </LeapProvider>
       </main>
       <Analytics />
     </>
