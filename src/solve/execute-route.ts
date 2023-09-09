@@ -34,8 +34,7 @@ import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
 import { MsgsResponse } from "./client";
 import {
   PostBuildRequestDto,
-  PostBuildResponseDto,
-  MultiChainMsg,
+  MetamaskTransaction,
 } from "./types";
 
 import { ethers } from "ethers";
@@ -123,7 +122,7 @@ export async function executeRoute(
       evmSenderAddr,
       route.source_asset_chain_id
     );
-    const buildResult: PostBuildResponseDto = await buildEVMHexData(
+    const buildResult: MetamaskTransaction = await buildEVMHexData(
       leapClient,
       evmSenderAddr,
       route
@@ -133,10 +132,10 @@ export async function executeRoute(
       route.source_asset_chain_id,
       getBigInt(nonce),
       gasPrice,
-      getBigInt(buildResult.result.gasLimit),
-      buildResult.result.to,
-      getBigInt(buildResult.result.value),
-      buildResult.result.data,
+      getBigInt(buildResult.gasLimit),
+      buildResult.to,
+      getBigInt(buildResult.value),
+      buildResult.data,
       evmSenderAddr
     );
   }

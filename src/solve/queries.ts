@@ -103,7 +103,6 @@ export function useRoute(
 export const QUOTE_REFETCH_INTERVAL = 5000;
 export function useEVMRoute(
   client: LeapClient,
-  walletClient: WalletClient,
   amountIn: string,
   sourceAsset?: string,
   sourceAssetChainID?: string,
@@ -206,13 +205,15 @@ export function useEVMRoute(
           },
           estimated_affiliate_fee: "0" + cosmoTargetChainTokenOut,
         },
+        transfer: undefined,
+        erc20Convert: undefined,
       };
 
       const result: RouteResponse = {
         source_asset_denom: sourceAsset,
         source_asset_chain_id: sourceAssetChainID,
-        dest_asset_denom: destinationAsset,
-        dest_asset_chain_id: destinationAssetChainID,
+        dest_asset_denom: cosmoTargetChainTokenOut,
+        dest_asset_chain_id: sourceAssetChainID,
         amount_in: amountIn,
         operations: [operation],
         chain_ids: [sourceAssetChainID],

@@ -13,6 +13,8 @@ import {
 } from "./types";
 import { ethers, BigNumberish } from "ethers";
 import { atom } from "jotai";
+import { bech32 } from "bech32";
+import { ETH } from "@evmos/address-converter";
 
 import { CHAINS_RESPONSE } from "../../fixtures/chains";
 import { ASSETS_RESPONSE } from "../../fixtures/assets";
@@ -234,3 +236,48 @@ export const queryKeys = {
     ],
   },
 };
+
+
+function makeBech32Encoder(prefix: string) {
+  return (data: Buffer) => bech32.encode(prefix, bech32.toWords(data))
+}
+
+function makeBech32Decoder(currentPrefix: string) {
+  return (data: string) => {
+    const { prefix, words } = bech32.decode(data)
+    if (prefix !== currentPrefix) {
+      throw Error('Unrecognised address format')
+    }
+    return Buffer.from(bech32.fromWords(words))
+  }
+}
+
+const bech32Chain = (name: string, prefix: string) => ({
+  decoder: makeBech32Decoder(prefix),
+  encoder: makeBech32Encoder(prefix),
+  name,
+})
+
+export const EVMOS = bech32Chain('EVMOS', 'evmos')
+
+export const ethToEvmos = (ethAddress: string) => {
+  const data = ETH.decoder(ethAddress)
+  return EVMOS.encoder(data)
+}
+
+export const evmosToEth = (evmosAddress: string) => {
+  const data = EVMOS.decoder(evmosAddress)
+  return ETH.encoder(data)
+}
+
+export const CRONOS = bech32Chain('CRONOS', 'cronos')
+
+export const ethToCronos = (ethAddress: string) => {
+  const data = ETH.decoder(ethAddress)
+  return EVMOS.encoder(data)
+}
+
+export const cronosToEth = (evmosAddress: string) => {
+  const data = EVMOS.decoder(evmosAddress)
+  return ETH.encoder(data)
+}

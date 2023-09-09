@@ -11,6 +11,7 @@ import { useChain } from "@cosmos-kit/react";
 import { useQuery } from "@tanstack/react-query";
 import { ethers } from "ethers";
 import { useEffect, useMemo, useState } from "react";
+import { getChainByID } from "@/utils/utils";
 
 export const LAST_SOURCE_CHAIN_KEY = "IBC_DOT_FUN_LAST_SOURCE_CHAIN";
 
@@ -40,18 +41,24 @@ export function useSwapWidget() {
     }
   }, [formValues.amountIn, formValues.sourceAsset]);
 
+
+  const chainRecord = getChainByID(formValues.sourceAsset?.chain_id ?? "cosmoshub-4");
+
+  const chain = useChain(chainRecord?.chain_name);
+  const walletClient = chain.chainWallet?.client;
+
   const {
     data: routeResponse,
     fetchStatus: routeFetchStatus,
-    isError,
+    isError: isError,
   } = useComposedRoute(
     leapClient,
-    walletClient,
     amountInWei,
     formValues.sourceAsset?.denom,
     formValues.sourceAsset?.chain_id,
     formValues.destinationAsset?.denom,
     formValues.destinationAsset?.chain_id,
+    walletClient,
     true
   );
 

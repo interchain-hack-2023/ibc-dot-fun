@@ -304,7 +304,7 @@ const RouteDisplay: FC<Props> = ({ route }) => {
             destinationChain = nextOperation.swap.swap_out.swap_venue.chain_id;
           }
         } else if (isERC20ConvertOperation(nextOperation)) {
-          destinationChain = route.operations[i].erc20Convert.convert_operation.venue.chain_id;
+          destinationChain = nextOperation.erc20Convert.convert_operation.venue.chain_id;
         }
         else {
           destinationChain = nextOperation.transfer.chain_id;
