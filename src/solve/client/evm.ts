@@ -36,15 +36,8 @@ export class EvmService {
     return data.result;
   }
 
-  async postQuoteV2({
-    queryKey,
-  }: QueryFunctionContext<[string, PostQuoteRequestDto | undefined]>) {
-    const [_key, queryParams] = queryKey;
-
-    if (!queryParams || queryParams.amount === "0") return;
-
-    const { chainId, ...rest } = queryParams;
-
+  async postQuoteV2(dto: PostQuoteRequestDto) {
+    const { chainId, ...rest } = dto;
     const { data } = await this.httpClient.post<PostQuoteResponseDtoV2>(
       `v1/chains/${chainId}/quote`,
       rest

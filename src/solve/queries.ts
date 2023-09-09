@@ -158,9 +158,7 @@ export function useEVMRoute(
         withCycle: false,
       };
 
-      // const route = await client.evm.postQuoteV2({
-      //   postQuoteRequest: postQuoteRequest,
-      // });
+      const route = await client.evm.postQuoteV2(postQuoteRequest);
 
       // if (!route.operations) {
       //   throw new Error("No route found");
