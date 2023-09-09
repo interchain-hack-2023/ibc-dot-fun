@@ -4,6 +4,7 @@ import {
   PostQuoteRequestDto,
   PostBuildRequestDto,
   MultiChainMsg,
+  OperationWithSwap,
 } from "./types";
 import { RouteResponse } from "./client";
 import { atom, useAtomValue } from "jotai";
@@ -16,10 +17,9 @@ import {
 } from "./utils";
 import { WalletClient } from "@cosmos-kit/core";
 import { get } from "http";
-import { getAccount } from "@/utils/utils";
 import { use } from "react";
-import { keccak256 } from "ethers";
 import { Route } from "next";
+import chainIdToVenueNameMap from "../utils/utils";
 
 import { SWAP_VENUES } from "@/config";
 export function useAssets(client: LeapClient) {
@@ -131,18 +131,18 @@ export function useEVMRoute(
       }
       const targetChainId: string = sourceAssetChainID;
 
-      const cosmoTargetChainTokenIn =
+      const cosmoTargetChainTokenIn: string =
         tokenChainMap[targetChainId][
           cosmoToERCMap[targetChainId][sourceAsset].name
         ];
-      const cosmoTargetChainTokenOut =
+      const cosmoTargetChainTokenOut: string =
         tokenChainMap[targetChainId][
           cosmoToERCMap[targetChainId][destinationAsset].name
         ];
 
-      const ercTokenInAddr =
+      const ercTokenInAddr: string =
         cosmoToERCMap[targetChainId][cosmoTargetChainTokenIn].address;
-      const ercTokenOutAddr =
+      const ercTokenOutAddr: string =
         cosmoToERCMap[targetChainId][cosmoTargetChainTokenOut].address;
 
       if (
@@ -153,16 +153,11 @@ export function useEVMRoute(
         return;
       }
 
-      const account = await getAccount(walletClient, targetChainId);
-      const pk = Buffer.from(account.pubkey).toString("base64");
-
-      const evmSenderAddr = keccak256(pk).slice(20);
-
       const postQuoteRequest: PostQuoteRequestDto = {
-        chainId: cosmoToErcChainIdMap[targetChainId],
+        chainId: cosmoToErcChainIdMap[targetChainId].chainId,
         tokenInAddr: ercTokenInAddr,
         tokenOutAddr: ercTokenOutAddr,
-        from: evmSenderAddr,
+        from: "",
         /**
          * TODO: decimals
          */
@@ -191,30 +186,46 @@ export function useEVMRoute(
         throw new Error("No route found");
       }
 
+      const operation: OperationWithSwap = {
+        swap: {
+          swap_in: {
+            swap_venue: {
+              name: SWAP_VENUES[
+                chainIdToVenueNameMap.get(sourceAssetChainID) as string
+              ].name,
+              chain_id: sourceAssetChainID,
+            },
+            swap_operations: [
+              {
+                pool: "EVMswap",
+                denom_in: cosmoTargetChainTokenIn,
+                denom_out: cosmoTargetChainTokenOut,
+              },
+            ],
+            swap_amount_in: amountIn,
+          },
+          estimated_affiliate_fee: "0" + cosmoTargetChainTokenOut,
+        },
+      };
+
       const result: RouteResponse = {
         source_asset_denom: sourceAsset,
         source_asset_chain_id: sourceAssetChainID,
         dest_asset_denom: destinationAsset,
         dest_asset_chain_id: destinationAssetChainID,
         amount_in: amountIn,
-        operations: [],
+        operations: [operation],
         chain_ids: [sourceAssetChainID],
         does_swap: true,
         estimated_amount_out: route.dexAgg.expectedAmountOut,
+        swap_venue: {
+          name: SWAP_VENUES[
+            chainIdToVenueNameMap.get(sourceAssetChainID) as string
+          ].name,
+          chain_id: sourceAssetChainID,
+        },
+        dex_aggregate: route.dexAgg,
       };
-
-      // const postBuildRequestDto: PostBuildRequestDto = {
-      //   chainId: cosmoToErcChainIdMap[targetChainId],
-      //   tokenInAddr: cosmoToERCMap[targetChainId][sourceAsset],
-      //   tokenOutAddr: cosmoToERCMap[targetChainId][destinationAsset],
-      //   from: evmSenderAddr,
-      //   amount: amountIn,
-      //   slippageBps: 100,
-      //   maxSplit: 15,
-      //   dexAgg: route.dexAgg,
-      // };
-
-      // const tx = await client.evm.postBuild(postBuildRequestDto);
 
       return result;
     },

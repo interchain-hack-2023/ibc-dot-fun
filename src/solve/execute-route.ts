@@ -11,7 +11,16 @@ import {
   signAmino,
   signAndBroadcastEvmos,
   signAndBroadcastInjective,
+  getAccount,
 } from "@/utils/utils";
+import { keccak256 } from "ethers";
+
+import {
+  getEVMChainId,
+  cosmoToERCMap,
+  cosmoToErcChainIdMap,
+  tokenChainMap,
+} from "./utils";
 import { EncodeObject, OfflineSigner, coin } from "@cosmjs/proto-signing";
 import { GasPrice, DeliverTxResponse } from "@cosmjs/stargate";
 import { MsgTransfer as MsgTransferInjective } from "@injectivelabs/sdk-ts";
@@ -20,8 +29,56 @@ import { LeapClient, MsgsRequest, RouteResponse } from "./client";
 import Long from "long";
 import { OfflineAminoSigner } from "@keplr-wallet/types";
 import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
+import { PostBuildRequestDto, PostBuildResponseDto } from "./types";
+
+import { ethers } from "ethers";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function buildEVMHexData(
+  leapClient: LeapClient,
+  evmSenderAddr: string,
+  route: RouteResponse
+) {
+  if (!route.dex_aggregate) {
+    throw new Error("No dex aggregate found");
+  }
+  const cosmoTargetChainTokenIn: string =
+    tokenChainMap[route.source_asset_chain_id][
+      cosmoToERCMap[route.source_asset_chain_id][route.source_asset_denom].name
+    ];
+  const cosmoTargetChainTokenOut: string =
+    tokenChainMap[route.source_asset_chain_id][
+      cosmoToERCMap[route.source_asset_chain_id][route.dest_asset_denom].name
+    ];
+
+  const ercTokenInAddr: string =
+    cosmoToERCMap[route.source_asset_chain_id][cosmoTargetChainTokenIn].address;
+  const ercTokenOutAddr: string =
+    cosmoToERCMap[route.source_asset_chain_id][cosmoTargetChainTokenOut]
+      .address;
+
+  const postBuildRequestDto: PostBuildRequestDto = {
+    chainId: cosmoToErcChainIdMap[route.source_asset_chain_id].chainId,
+    tokenInAddr: ercTokenInAddr,
+    tokenOutAddr: ercTokenOutAddr,
+    from: evmSenderAddr,
+    amount: route.amount_in,
+    slippageBps: 100,
+    maxSplit: 15,
+    dexAgg: route.dex_aggregate,
+  };
+
+  return await leapClient.evm.postBuild(postBuildRequestDto);
+}
+
+async function getEVMNonce(address: string, chainID: string) {
+  const provider = new ethers.JsonRpcProvider(
+    cosmoToErcChainIdMap[chainID].rpc
+  );
+  const nonce = await provider.getTransactionCount(address);
+  return nonce;
+}
 
 export async function executeRoute(
   leapClient: LeapClient,
@@ -41,6 +98,19 @@ export async function executeRoute(
     userAddresses[chainID] = address;
   }
 
+  let evmSenderAddr;
+  if (getEVMChainId(route.source_asset_chain_id) != 0) {
+    const account = await getAccount(walletClient, route.source_asset_chain_id);
+    const pk = Buffer.from(account.pubkey).toString("base64");
+    const evmSenderAddr = "0x" + keccak256(pk).slice(20);
+    const nonce = await getEVMNonce(evmSenderAddr, route.source_asset_chain_id);
+    const result: PostBuildResponseDto = await buildEVMHexData(
+      leapClient,
+      evmSenderAddr,
+      route
+    );
+  }
+
   const msgRequest: MsgsRequest = {
     source_asset_denom: route.source_asset_denom,
     source_asset_chain_id: route.source_asset_chain_id,
@@ -58,6 +128,8 @@ export async function executeRoute(
   const msgsResponse = await leapClient.skipClient.fungible.getMessages(
     msgRequest
   );
+
+  // const tx = await client.evm.postBuild(postBuildRequestDto);
 
   // check balances on chains where a tx is initiated
   for (let i = 0; i < msgsResponse.msgs.length; i++) {

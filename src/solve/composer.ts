@@ -3,10 +3,7 @@ import { LeapClient, RouteResponse } from "./client";
 import { useRoute, useEVMRoute } from "./queries";
 import { useQuery } from "@tanstack/react-query";
 import { WalletClient } from "@cosmos-kit/core";
-
-const chainIdToVenueNameMap = new Map<string, string>();
-chainIdToVenueNameMap.set("evmos_9001-1", "evmos-dex");
-chainIdToVenueNameMap.set("cronosmainnet_25-1", "cronos-dex");
+import chainIdToVenueNameMap from "../utils/utils";
 
 function useConvertERC20(
   contractAddress: string,

@@ -5,6 +5,7 @@ import {
   MultiChainMsg,
   Operation,
   SwapVenue,
+  AggregateSwap,
 } from "../types";
 
 export interface AssetsRequest {
@@ -40,6 +41,7 @@ export interface RouteResponse {
   does_swap: boolean;
   estimated_amount_out?: string;
   swap_venue?: SwapVenue;
+  dex_aggregate?: AggregateSwap;
 }
 
 export interface MsgsRequest {

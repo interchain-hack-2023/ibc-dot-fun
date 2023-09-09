@@ -648,6 +648,7 @@ export const CHAINS_RESPONSE = {
       chain_name: "cronos",
       chain_id: "cronosmainnet_25-1",
       evm_chain_id: 25,
+      evm_rpc_url: "https://evm.cronos.org/",
       pfm_enabled: false,
       cosmos_sdk_version: "v0.46.7",
       modules: {
@@ -808,6 +809,7 @@ export const CHAINS_RESPONSE = {
       chain_name: "evmos",
       chain_id: "evmos_9001-2",
       evm_chain_id: 9001,
+      evm_rpc_url: "https://eth.bd.evmos.org:8545",
       pfm_enabled: false,
       cosmos_sdk_version: "v0.46.12",
       modules: {

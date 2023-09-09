@@ -46,6 +46,7 @@ export function useSwapWidget() {
     isError,
   } = useComposedRoute(
     leapClient,
+    walletClient,
     amountInWei,
     formValues.sourceAsset?.denom,
     formValues.sourceAsset?.chain_id,

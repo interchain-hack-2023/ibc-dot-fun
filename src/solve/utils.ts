@@ -132,17 +132,27 @@ export const tokenChainMap: Record<
   Record<string, string>
 > = getTokenChainMap();
 
+interface ChainIdWithRPC {
+  chainId: number;
+  rpc: string;
+}
+
 function getCosmoToErcChainIdMap() {
-  const dictionary: Record<string, number> = {};
+  const dictionary: Record<string, ChainIdWithRPC> = {};
   for (const chains of CHAIN_MAP) {
     if (chains.evm_chain_id) {
-      dictionary[chains.chain_id] = chains.evm_chain_id;
+      if (chains.evm_rpc_url) {
+        dictionary[chains.chain_id] = {
+          chainId: chains.evm_chain_id,
+          rpc: chains.evm_rpc_url,
+        };
+      }
     }
   }
   return dictionary;
 }
 
-export const cosmoToErcChainIdMap: Record<string, number> =
+export const cosmoToErcChainIdMap: Record<string, ChainIdWithRPC> =
   getCosmoToErcChainIdMap();
 
 export function getEVMChainId(chainId: string): number {

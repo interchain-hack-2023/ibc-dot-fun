@@ -625,3 +625,10 @@ export async function signAmino(
     signatures: [fromBase64(signature.signature)],
   });
 }
+
+const chainIdToVenueNameMap = new Map<string, string>();
+
+chainIdToVenueNameMap.set("evmos_9001-1", "evmos-dex");
+chainIdToVenueNameMap.set("cronosmainnet_25-1", "cronos-dex");
+
+export default chainIdToVenueNameMap;
