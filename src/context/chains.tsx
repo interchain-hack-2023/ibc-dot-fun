@@ -1,6 +1,6 @@
 import { FC, PropsWithChildren, createContext, useContext } from "react";
 import { useSolveChains } from "@/solve/queries";
-import { Chain as SolveChain, useSkipClient } from "@/solve";
+import { Chain as SolveChain, useLeapClient } from "@/solve";
 import { ChainRecord } from "@cosmos-kit/core";
 import { useManager } from "@cosmos-kit/react";
 
@@ -18,8 +18,8 @@ export const ChainsContext = createContext<ChainsContext>({
 });
 
 export const ChainsProvider: FC<PropsWithChildren> = ({ children }) => {
-  const skipClient = useSkipClient();
-  const { data: supportedChains } = useSolveChains(skipClient);
+  const leapClient = useLeapClient();
+  const { data: supportedChains } = useSolveChains(leapClient);
 
   const { chainRecords, walletRepos } = useManager();
 

@@ -5,6 +5,7 @@ import { FungibleService } from "./fungible";
 import { TransactionService } from "./transaction";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.skip.money/v1";
+const API_EVM_URL = process.env.NEXT_PUBLIC_API_EVM_URL;
 
 interface GetChainsResponse {
   chains: Chain[];
@@ -43,5 +44,19 @@ export class SkipClient {
     return chains.filter(
       (chain) => !this.ignoreChains.includes(chain.chain_id)
     );
+  }
+}
+
+export class LeapClient {
+  private httpClientForEVM: AxiosInstance;
+  public skipClient: SkipClient;
+
+  constructor(ignoreChains: string[] = []) {
+    this.skipClient = new SkipClient(ignoreChains);
+
+    this.httpClientForEVM = axios.create({
+      baseURL: API_EVM_URL,
+      timeout: 5000,
+    });
   }
 }

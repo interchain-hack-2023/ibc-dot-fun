@@ -1,29 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
-import { SkipClient } from "./client";
+import { LeapClient } from "./client";
 
-export function useAssets(client: SkipClient) {
+export function useAssets(client: LeapClient) {
   return useQuery({
     queryKey: ["solve-assets"],
     queryFn: async () => {
-      const assets = await client.fungible.getAssets();
+      const assets = await client.skipClient.fungible.getAssets();
 
       return assets;
     },
   });
 }
 
-export function useSolveChains(client: SkipClient) {
+export function useSolveChains(client: LeapClient) {
   return useQuery({
     queryKey: ["solve-chains"],
     queryFn: () => {
-      return client.chains();
+      return client.skipClient.chains();
     },
     placeholderData: [],
   });
 }
 
 export function useRoute(
-  client: SkipClient,
+  client: LeapClient,
   amountIn: string,
   sourceAsset?: string,
   sourceAssetChainID?: string,
@@ -50,7 +50,7 @@ export function useRoute(
         return;
       }
 
-      const route = await client.fungible.getRoute({
+      const route = await client.skipClient.fungible.getRoute({
         amount_in: amountIn,
         source_asset_denom: sourceAsset,
         source_asset_chain_id: sourceAssetChainID,
@@ -78,3 +78,10 @@ export function useRoute(
       amountIn !== "0",
   });
 }
+
+// export function getChainMetadata(client: LeapClient, chainId: number) {
+//   const { data } = client.https.get<GetMetadataResponseDto>(
+//     `${process.env.NEXT_PUBLIC_API_ENDPOINT}/v1/chains/${chainId}/metadata`
+//   );
+//   return data.result;
+// }

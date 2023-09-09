@@ -1,6 +1,6 @@
 import { rest } from "msw";
 import { setupServer } from "msw/node";
-import { SkipClient } from "../client";
+import { LeapClient } from "../client";
 import { IGNORE_CHAINS } from "../../../config";
 
 const handlers = [
@@ -141,7 +141,7 @@ const handlers = [
 
 const server = setupServer(...handlers);
 
-describe("SkipClient", () => {
+describe("LeapClient", () => {
   // Establish API mocking before all tests.
   beforeAll(() => server.listen());
 
@@ -154,9 +154,9 @@ describe("SkipClient", () => {
 
   describe("/v1/info/chains", () => {
     it("filters ignored chains", async () => {
-      const client = new SkipClient(IGNORE_CHAINS);
+      const client = new LeapClient(IGNORE_CHAINS);
 
-      const response = await client.chains();
+      const response = await client.skipClient.chains();
 
       const responseChainIDs = response.map((chain) => chain.chain_id);
 
@@ -168,10 +168,10 @@ describe("SkipClient", () => {
 
   describe("/v1/fungible/route", () => {
     it("sets a value for cumulative_affiliate_fee_bps if not provided", async () => {
-      const client = new SkipClient();
+      const client = new LeapClient();
 
       await expect(
-        client.fungible.getRoute({
+        client.skipClient.fungible.getRoute({
           amount_in: "1000000",
           source_asset_denom: "uosmo",
           source_asset_chain_id: "osmosis-1",
