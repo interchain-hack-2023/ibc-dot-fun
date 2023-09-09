@@ -27,6 +27,7 @@ import {
   generatePostBodyBroadcast,
   generateEndpointBroadcast,
 } from "@evmos/provider";
+import { createTransactionPayload } from "@evmos/transactions";
 import axios from "axios";
 import {
   Chain,
@@ -60,6 +61,9 @@ import { SignMode } from "cosmjs-types/cosmos/tx/signing/v1beta1/signing";
 import { Int53 } from "@cosmjs/math";
 import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
 import { fromBase64 } from "@cosmjs/encoding";
+import { createCosmosPayload } from "./transactions";
+import { Proto,  } from "@evmos/proto"
+import ethers from "ethers";
 
 export function getChainByID(chainID: string) {
   return chainRegistry.chains.find(
@@ -206,6 +210,125 @@ export async function getSigningCosmWasmClientForChainID(
   );
 
   return client;
+}
+
+export function createCosmosMessageMsgEthereumTx(
+  nonce: bigint,
+  gasPrice: string,
+  gas: bigint,
+  to: string,
+  value: string,
+  data: Uint8Array,
+  v: Uint8Array,
+  r: Uint8Array,
+  s: Uint8Array,
+  from: string
+): Proto.Ethermint.EVM.Tx.MsgEthereumTx {
+  const ethTx = new Proto.Ethermint.EVM.Tx.LegacyTx({
+      nonce: nonce,
+      gasPrice: gasPrice,
+      gas: gas,
+      to: to,
+      value: value,
+      data: data,
+      v: v,
+      r: r,
+      s: s,
+    }
+  )
+
+  const signature = {
+      r: ethers.hexlify(r),
+      s: ethers.hexlify(s),
+      v: Buffer.from(v).readUintBE(0, v.length) // number
+  }
+
+  const transaction: ethers.TransactionLike = {
+    nonce: Number(nonce),
+    gasPrice: gasPrice,
+    gasLimit: gas,
+    to: to,
+    value: value,
+    data: data.toString(),
+    signature: signature
+  }
+  const hash: string = ethers.Transaction.from(transaction).serialized
+  return new Proto.Ethermint.EVM.Tx.MsgEthereumTx(
+    {
+      // @ts-ignore
+      data: ethTx,
+      size: ethTx.toBinary().length, // deprecated
+      hash: hash,
+      from: from
+    }
+  )
+}
+
+export async function signAndBroadcastEvmosRaw(
+    walletClient: WalletClient,
+    signerAddress: string,
+    payload: Proto.Ethermint.EVM.Tx.MsgEthereumTx
+) {
+  const chainID = "evmos_9001-2";
+  const result = await axios.get(
+    `https://rest.bd.evmos.org:1317${generateEndpointAccount(signerAddress)}`
+  );
+  const account = await getAccount(walletClient, chainID);
+  const pk = Buffer.from(account.pubkey).toString("base64");
+  const chain: Chain = {
+    chainId: 9001,
+    cosmosChainId: "evmos_9001-2",
+  };
+  // Populate the transaction sender parameters using the
+  // query API.
+  const sender: Sender = {
+    accountAddress: signerAddress,
+    sequence: result.data.account.base_account.sequence,
+    accountNumber: result.data.account.base_account.account_number,
+    // Use the public key from the account query, or retrieve
+    // the public key from the code snippet above.
+    pubkey: pk,
+  };
+  const fee: Fee = {
+    amount: "4000000000000000",
+    denom: "aevmos",
+    gas: "200000",
+  };
+  const memo = "";
+  const context: TxContext = {
+    chain,
+    sender,
+    fee,
+    memo,
+  };
+  const tx = createCosmosPayload(context, payload);
+  const { signDirect } = tx;
+  const signer = await getOfflineSigner(walletClient, chainID);
+  const signResponse = await signer.signDirect(sender.accountAddress, {
+    bodyBytes: signDirect.body.toBinary(),
+    authInfoBytes: signDirect.authInfo.toBinary(),
+    chainId: chain.cosmosChainId,
+    accountNumber: new Long(sender.accountNumber),
+  });
+  if (!signResponse) {
+    // Handle signature failure here.
+    throw new Error("Signature failed");
+  }
+  const signatures = [
+    new Uint8Array(Buffer.from(signResponse.signature.signature, "base64")),
+  ];
+  const { signed } = signResponse;
+  const signedTx = createTxRaw(
+    signed.bodyBytes,
+    signed.authInfoBytes,
+    signatures
+  );
+  const response = await axios.post(
+    `https://rest.bd.evmos.org:1317${generateEndpointBroadcast()}`,
+    generatePostBodyBroadcast(signedTx, "BROADCAST_MODE_BLOCK")
+  );
+  return response.data.tx_response;
+
 }
 
 export async function signAndBroadcastEvmos(
