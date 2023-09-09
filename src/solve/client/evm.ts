@@ -24,6 +24,7 @@ export class EvmService {
     );
     return data.result;
   }
+
   async getBalances(dto: GetBalanceRequestDto): Promise<BalanceOfToken[]> {
     const { chainId, ...params } = dto;
     const { data } = await this.httpClient.get<GetBalanceResponseDto>(
@@ -58,6 +59,7 @@ export class EvmService {
       `v1/chains/${chainId}/build`,
       rest
     );
+
     return data.result;
   }
 }

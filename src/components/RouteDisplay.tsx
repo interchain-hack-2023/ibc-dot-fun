@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { FC, Fragment, useMemo, useState } from "react";
-import { RouteResponse, isSwapOperation } from "@/solve";
+import { RouteResponse, isSwapOperation, isERC20ConvertOperation } from "@/solve";
 import { Chain, useChains } from "@/context/chains";
 import { chainNameToChainlistURL } from "@/cosmos";
 import { SWAP_VENUES } from "@/config";
@@ -22,7 +22,14 @@ interface SwapAction {
   venue: string;
 }
 
-type Action = TransferAction | SwapAction;
+interface ERC20ConvertAction {
+  type: "ERC20CONVERT";
+  erc20Asset: string;
+  venue: string;
+  venueChainId: String;
+}
+
+type Action = TransferAction | SwapAction | ERC20ConvertAction;
 
 const RouteEnd: FC<{
   amount: string;
@@ -155,6 +162,47 @@ const SwapStep: FC<{ action: SwapAction }> = ({ action }) => {
   );
 };
 
+const ERC20ConvertStep: FC<{ action: ERC20ConvertAction }> = ({ action }) => {
+  const { chains } = useChains();
+  const { getAsset } = useAssets();
+  const evmosChain = chains.find((c) => c.chain_id === action.venueChainId) as Chain;
+  const asset = getAsset(action.erc20Asset, evmosChain.chain_id);
+  if (!asset) {
+    return null;
+  }
+  const venue = SWAP_VENUES[action.venue];
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-14 h-14 flex items-center justify-center">
+        <div className="w-2 h-2 bg-neutral-200 rounded-full" />
+      </div>
+      <div>
+        <p className="text-sm text-neutral-500">
+          Convert{" "}
+          <img
+            className="inline-block w-4 h-4 -mt-1"
+            src={asset.logo_uri}
+            alt=""
+          />{" "}
+          <span className="font-semibold text-black">{asset.symbol}</span> for{" "}
+          <img
+            className="inline-block w-4 h-4 -mt-1"
+            src={asset.logo_uri}
+            alt=""
+          />{" "}
+          <span className="font-semibold text-black">{asset.symbol}</span> on{" "}
+          <img
+            className="inline-block w-4 h-4 -mt-1"
+            src={venue.imageURL}
+            alt=""
+          />{" "}
+          <span className="font-semibold text-black">{venue.name}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   route: RouteResponse;
 }
@@ -230,6 +278,16 @@ const RouteDisplay: FC<Props> = ({ route }) => {
         return;
       }
 
+      if (isERC20ConvertOperation(operation)) {
+        _actions.push({
+          type: "ERC20CONVERT",
+          erc20Asset: operation.erc20Convert.convert_operation.denom,
+          venue: operation.erc20Convert.convert_operation.venue.name,
+          venueChainId: operation.erc20Convert.convert_operation.venue.chain_id,
+        })
+        return;
+      }
+
       const sourceChain = operation.transfer.chain_id;
 
       let destinationChain = "";
@@ -245,7 +303,10 @@ const RouteDisplay: FC<Props> = ({ route }) => {
           if (nextOperation.swap.swap_out) {
             destinationChain = nextOperation.swap.swap_out.swap_venue.chain_id;
           }
-        } else {
+        } else if (isERC20ConvertOperation(nextOperation)) {
+          destinationChain = route.operations[i].erc20Convert.convert_operation.venue.chain_id;
+        }
+        else {
           destinationChain = nextOperation.transfer.chain_id;
         }
       }
@@ -289,6 +350,7 @@ const RouteDisplay: FC<Props> = ({ route }) => {
           actions.map((action, i) => (
             <Fragment key={i}>
               {action.type === "SWAP" && <SwapStep action={action} />}
+              {action.type === "ERC20CONVERT" && <ERC20ConvertStep action={action} />}
               {action.type === "TRANSFER" && <TransferStep action={action} />}
             </Fragment>
           ))}

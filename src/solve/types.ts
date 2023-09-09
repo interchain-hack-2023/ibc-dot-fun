@@ -98,6 +98,16 @@ export interface SwapIn {
   swap_amount_in?: string;
 }
 
+export interface ConvertVenue {
+  name: string;
+  chain_id: string;
+}
+
+export interface ConvertOperation {
+  denom: string;
+  venue: ConvertVenue
+}
+
 export interface Transfer {
   port: string;
   channel: string;
@@ -112,17 +122,37 @@ export interface Swap {
   estimated_affiliate_fee?: string;
 }
 
+export interface ERC20ConvertMessage {
+  contractAddress: string;
+  amount: string;
+  receiver: string;
+  sender: string;
+}
+
+export interface ERC20Convert {
+  convert_message: ERC20ConvertMessage;
+  convert_operation: ConvertOperation;
+}
+
 export interface OperationWithSwap {
   swap: Swap;
   transfer: never;
+  erc20Convert: never;
 }
 
 export interface OperationWithTransfer {
   swap: never;
   transfer: Transfer;
+  erc20Convert: never;
 }
 
-export type Operation = OperationWithSwap | OperationWithTransfer;
+export interface OperationWithERC20Convert {
+  swap?: never;
+  transfer?: never;
+  erc20Convert: ERC20Convert;
+}
+
+export type Operation = OperationWithSwap | OperationWithTransfer | OperationWithERC20Convert;
 
 export function isSwapOperation(
   operation: Operation
@@ -134,6 +164,12 @@ export function isTransferOperation(
   operation: Operation
 ): operation is OperationWithTransfer {
   return operation.transfer !== undefined;
+}
+
+export function isERC20ConvertOperation(
+  operation: Operation
+): operation is OperationWithERC20Convert {
+  return operation.erc20Convert !== undefined;
 }
 
 export interface Affiliate {

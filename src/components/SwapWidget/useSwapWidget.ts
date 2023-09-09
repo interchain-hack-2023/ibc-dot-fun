@@ -4,7 +4,7 @@ import { useBalancesByChain } from "@/cosmos";
 import {
   AssetWithMetadata,
   getNumberOfTransactionsFromRoute,
-  useRoute,
+  useComposedRoute,
   useLeapClient,
 } from "@/solve";
 import { useChain } from "@cosmos-kit/react";
@@ -44,7 +44,7 @@ export function useSwapWidget() {
     data: routeResponse,
     fetchStatus: routeFetchStatus,
     isError,
-  } = useRoute(
+  } = useComposedRoute(
     leapClient,
     amountInWei,
     formValues.sourceAsset?.denom,
