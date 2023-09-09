@@ -18,6 +18,7 @@ import {
   StargateClient,
   StdFee,
   createDefaultAminoConverters,
+  accountFromAny,
 } from "@cosmjs/stargate";
 import { WalletClient, getFastestEndpoint } from "@cosmos-kit/core";
 import { useChain, useManager } from "@cosmos-kit/react";
@@ -27,6 +28,7 @@ import {
   generatePostBodyBroadcast,
   generateEndpointBroadcast,
 } from "@evmos/provider";
+
 import { createTransactionPayload } from "@evmos/transactions";
 import axios from "axios";
 import {
@@ -37,7 +39,8 @@ import {
   TxContext,
   createTxIBCMsgTransfer,
 } from "@evmos/transactions";
-import { createTxRaw } from "@evmos/proto";
+import { createTxRaw, decodeEthermintAccount } from "@evmos/proto";
+
 import Long from "long";
 import {
   BaseAccount,
@@ -62,8 +65,9 @@ import { Int53 } from "@cosmjs/math";
 import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
 import { fromBase64 } from "@cosmjs/encoding";
 import { createCosmosPayload } from "./transactions";
-import { Proto,  } from "@evmos/proto"
+import { Proto } from "@evmos/proto";
 import ethers from "ethers";
+import { CompressedBatchProof } from "cosmjs-types/proofs";
 
 export function getChainByID(chainID: string) {
   return chainRegistry.chains.find(
@@ -225,23 +229,22 @@ export function createCosmosMessageMsgEthereumTx(
   from: string
 ): Proto.Ethermint.EVM.Tx.MsgEthereumTx {
   const ethTx = new Proto.Ethermint.EVM.Tx.LegacyTx({
-      nonce: nonce,
-      gasPrice: gasPrice,
-      gas: gas,
-      to: to,
-      value: value,
-      data: data,
-      v: v,
-      r: r,
-      s: s,
-    }
-  )
+    nonce: nonce,
+    gasPrice: gasPrice,
+    gas: gas,
+    to: to,
+    value: value,
+    data: data,
+    v: v,
+    r: r,
+    s: s,
+  });
 
   const signature = {
-      r: ethers.hexlify(r),
-      s: ethers.hexlify(s),
-      v: Buffer.from(v).readUintBE(0, v.length) // number
-  }
+    r: ethers.hexlify(r),
+    s: ethers.hexlify(s),
+    v: Buffer.from(v).readUintBE(0, v.length), // number
+  };
 
   const transaction: ethers.TransactionLike = {
     nonce: Number(nonce),
@@ -250,24 +253,30 @@ export function createCosmosMessageMsgEthereumTx(
     to: to,
     value: value,
     data: data.toString(),
-    signature: signature
-  }
-  const hash: string = ethers.Transaction.from(transaction).serialized
-  return new Proto.Ethermint.EVM.Tx.MsgEthereumTx(
-    {
-      // @ts-ignore
-      data: ethTx,
-      size: ethTx.toBinary().length, // deprecated
-      hash: hash,
-      from: from
-    }
-  )
+    signature: signature,
+  };
+  const hash: string = ethers.Transaction.from(transaction).serialized;
+  return new Proto.Ethermint.EVM.Tx.MsgEthereumTx({
+    // @ts-ignore
+    data: ethTx,
+    size: ethTx.toBinary().length, // deprecated
+    hash: hash,
+    from: from,
+  });
 }
 
+export const accountParser = (account: any) => {
+  try {
+    return decodeEthermintAccount(account);
+  } catch {
+    return accountFromAny(account);
+  }
+};
+
 export async function signAndBroadcastEvmosRaw(
-    walletClient: WalletClient,
-    signerAddress: string,
-    payload: Proto.Ethermint.EVM.Tx.MsgEthereumTx
+  walletClient: WalletClient,
+  signerAddress: string,
+  payload: Proto.Ethermint.EVM.Tx.MsgEthereumTx
 ) {
   const chainID = "evmos_9001-2";
   const result = await axios.get(
@@ -328,7 +337,6 @@ export async function signAndBroadcastEvmosRaw(
     generatePostBodyBroadcast(signedTx, "BROADCAST_MODE_BLOCK")
   );
   return response.data.tx_response;
-
 }
 
 export async function signAndBroadcastEvmos(

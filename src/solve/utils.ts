@@ -5,9 +5,16 @@ import {
   Asset,
   AssetWithMetadata,
   MetamaskTransaction,
+  ChainMetadata,
+  Chain,
+  PostQuoteRequestDto,
   TokenV2,
 } from "./types";
 import { ethers, BigNumberish } from "ethers";
+import { atom } from "jotai";
+
+import { CHAINS_RESPONSE } from "../../fixtures/chains";
+import { ASSETS_RESPONSE } from "../../fixtures/assets";
 
 export function assetHasMetadata(asset: Asset) {
   if (!asset.decimals) {
@@ -35,6 +42,83 @@ export function isAssetWithMetadata(asset: Asset): asset is AssetWithMetadata {
 
 export function filterAssetsWithMetadata(assets: Asset[]) {
   return assets.filter(isAssetWithMetadata);
+}
+
+const ASSETS_MAP: Record<
+  string,
+  Record<string, Asset[]>
+> = ASSETS_RESPONSE.chain_to_assets_map;
+
+const CHAIN_MAP = CHAINS_RESPONSE.chains;
+// convert token config from cosmos to erc
+export const cosmoToERCMap: Record<
+  string,
+  Record<string, string>
+> = getCosmoToErcMap();
+
+function getCosmoToErcMap() {
+  const dictionary: Record<string, Record<string, string>> = {};
+  for (const chainID in ASSETS_MAP) {
+    if (getEVMChainId(chainID) != 0) {
+      ASSETS_MAP[chainID].assets.forEach((assetItem) => {
+        if (assetItem.evm_address) {
+          if (!dictionary[chainID]) {
+            dictionary[chainID] = {};
+          } else {
+            dictionary[chainID][assetItem.denom] = assetItem.evm_address;
+          }
+        }
+      });
+    }
+  }
+  return dictionary;
+}
+
+function getErcToCosmoMap() {
+  const dictionary: Record<string, Record<string, string>> = {};
+  for (const chainID in ASSETS_MAP) {
+    if (getEVMChainId(chainID) != 0) {
+      ASSETS_MAP[chainID].assets.forEach((assetItem) => {
+        if (assetItem.evm_address) {
+          if (!dictionary[chainID]) {
+            dictionary[chainID] = {};
+          } else {
+            dictionary[chainID][assetItem.evm_address] = assetItem.denom;
+          }
+        }
+      });
+    }
+  }
+  return dictionary;
+}
+
+export const ercToCosmoMap: Record<
+  string,
+  Record<string, string>
+> = getErcToCosmoMap();
+
+function getCosmoToErcChainIdMap() {
+  const dictionary: Record<string, number> = {};
+  for (const chains of CHAIN_MAP) {
+    if (chains.evm_chain_id) {
+      dictionary[chains.chain_id] = chains.evm_chain_id;
+    }
+  }
+  return dictionary;
+}
+
+export const cosmoToErcChainIdMap: Record<string, number> =
+  getCosmoToErcChainIdMap();
+
+export function getEVMChainId(chainId: string): number {
+  // evmos and cronos
+  if (chainId == "evmos_9001-2") {
+    return 9001;
+  } else if (chainId == "cronosmainnet_25-1") {
+    return 25;
+  } else {
+    return 0;
+  }
 }
 
 export async function getNumberOfTransactionsFromRoute(route: RouteResponse) {
@@ -71,108 +155,37 @@ export async function getNumberOfTransactionsFromRoute(route: RouteResponse) {
   return msgsResponse.msgs.length;
 }
 
-// export class SwapTransactionHelper {
-//   private provider?: ethers.providers.Web3Provider;
-//   private signer?: ethers.Signer;
+export const chainMetaDataListAtom = atom<ChainMetadata[]>([]);
 
-//   public refreshProvider() {
-//     this.provider = new ethers.providers.Web3Provider(
-//       window.ethereum as unknown as ethers.providers.ExternalProvider
-//     );
-//     this.signer = this.provider.getSigner();
-//   }
+export const pageModeAtom = atom<"swap" | "flash">("swap");
+export const tokenInAddressAtom = atom<string | undefined>(undefined);
+export const signParamsTypeAtom = atom<"max" | "fit">("max");
 
-//   constructor() {
-//     if (typeof window === "undefined" || typeof jest !== "undefined")
-//       throw new Error(
-//         "swap-helper should not executed in server-side or testing environment!"
-//       );
+export const balanceUpdateTimestampAtom = atom(0);
+export const tokenOutAddressAtom = atom<string | undefined>(undefined);
 
-//     if (window.ethereum) {
-//       this.refreshProvider();
-//     }
-//   }
+export const txInProgressAtom = atom<{
+  txHash: string;
+  status: "waiting" | "done";
+} | null>(null);
 
-//   async getBalanceFromAddress(tokenAddress: string) {
-//     if (!this.signer || !this.provider) throw new MetaMaskNotInstalledError();
-//     try {
-//       const address = await this.signer.getAddress();
+export function compareTokenAddress(a: string, b: string) {
+  return a.toLocaleLowerCase() == b.toLocaleLowerCase();
+}
 
-//       const erc20 = IERC20__factory.connect(tokenAddress, this.signer);
-//       return await erc20.balanceOf(address);
-//     } catch (e: unknown) {
-//       throw new ProviderError(
-//         `Can't fetch erc20 balance: ${getErrorMessage(e)}`
-//       );
-//     }
-//   }
+export const queryKeys = {
+  balance: {
+    v2: (chainId: number, walletAddress: string) =>
+      ["balance-v2", { chainId, walletAddress }] as const,
+  },
 
-//   async getNativeBalance() {
-//     if (!this.signer || !this.provider) throw new MetaMaskNotInstalledError();
-//     try {
-//       const address = await this.signer.getAddress();
-
-//       return this.provider.getBalance(address);
-//     } catch (e: unknown) {
-//       throw new ProviderError(
-//         `Can't fetch native balance: ${getErrorMessage(e)}`
-//       );
-//     }
-//   }
-
-//   async getApprove(
-//     contractAddress: string,
-//     address: string,
-//     amount: ethers.BigNumber
-//   ) {
-//     if (!this.signer || !this.provider) throw new MetaMaskNotInstalledError();
-//     try {
-//       const erc20 = IERC20__factory.connect(contractAddress, this.signer);
-//       return await erc20.approve(address, amount);
-//     } catch (e) {
-//       throw new ProviderError(`Can't erc20 approve: ${getErrorMessage(e)}`);
-//     }
-//   }
-
-//   async getPermit2Allowance(
-//     permit2Address: string,
-//     address: string,
-//     contractAddress: string,
-//     spender: string
-//   ) {
-//     if (!this.signer || !this.provider) throw new MetaMaskNotInstalledError();
-//     try {
-//       const permit2 = Permit2abi__factory.connect(
-//         permit2Address.toLowerCase(),
-//         this.signer
-//       );
-//       return await permit2.allowance(
-//         address.toLowerCase(),
-//         contractAddress.toLowerCase(),
-//         spender.toLowerCase()
-//       );
-//     } catch (e) {
-//       throw new ProviderError(
-//         `Can't get allowance of permit2 contract: ${getErrorMessage(e)}`
-//       );
-//     }
-//   }
-
-//   validateTransactionInput(args: {
-//     tokenInAddress?: string;
-//     tokenIn?: TokenV2;
-//     tokenOut?: TokenV2;
-//   }) {
-//     const { tokenInAddress, tokenIn, tokenOut } = args;
-//     if (!tokenInAddress || !tokenIn || !tokenOut) {
-//       throw new Error("Invalid input");
-//     }
-//   }
-// }
-
-// const swapTransactionHelper = (
-//   typeof window === "undefined" || typeof jest !== "undefined"
-//     ? null
-//     : new SwapTransactionHelper()
-// ) as SwapTransactionHelper;
-// export default swapTransactionHelper;
+  quote: {
+    calculate: (
+      endpoint: string,
+      params: PostQuoteRequestDto
+    ): [string, PostQuoteRequestDto & { endpoint: string }] => [
+      "quote",
+      { ...params, endpoint },
+    ],
+  },
+};

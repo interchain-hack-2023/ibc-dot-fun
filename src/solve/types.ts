@@ -1,3 +1,5 @@
+import { createQueryKeys } from "@lukemorales/query-key-factory";
+import { QueryFunctionContext } from "@tanstack/query-core";
 export interface ResponseDto<T extends unknown> {
   result: T;
 }
@@ -8,6 +10,9 @@ export interface Asset {
 
   origin_denom: string;
   origin_chain_id: string;
+
+  evm_chain_id?: string;
+  evm_address?: string;
 
   symbol?: string;
   name?: string;
@@ -20,9 +25,18 @@ export type AssetWithMetadata = Required<Asset>;
 export interface Chain {
   chain_name: string;
   chain_id: string;
+  evm_chain_id?: string;
+
   pfm_enabled: boolean;
   cosmos_sdk_version: string;
   modules: Record<string, ModuleVersionInfo>;
+  supports_memos?: boolean;
+  cosmos_module_support?: CosmosModuleSupport;
+}
+
+export interface CosmosModuleSupport {
+  authz: boolean;
+  freegrant: boolean;
 }
 
 export interface ChainTransaction {
@@ -360,3 +374,7 @@ export interface PostQuoteResponseDtoV2
   extends ResponseDto<
     PostQuoteResponseWithPath | PostQuoteResponseWithoutPath
   > {}
+
+export type ContextFromQueryKey<
+  QueryKeyFunc extends (...args: any[]) => readonly any[]
+> = QueryFunctionContext<ReturnType<QueryKeyFunc>>;

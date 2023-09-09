@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { LeapContext } from "./context";
 
 export function useLeapClient() {
@@ -10,3 +10,19 @@ export function useLeapClient() {
 
   return context.leapClient;
 }
+
+export const useDebounce = <T>(value: T, delay = 50): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};

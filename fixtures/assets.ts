@@ -7425,6 +7425,7 @@ export const ASSETS_RESPONSE = {
           chain_id: "evmos_9001-2",
           origin_denom: "aevmos",
           origin_chain_id: "evmos_9001-2",
+          evm_address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
           native: true,
           trace: "",
           symbol: "EVMOS",
@@ -7485,6 +7486,7 @@ export const ASSETS_RESPONSE = {
           origin_denom: "gravity0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
           origin_chain_id: "gravity-bridge-3",
           trace: "transfer/channel-8",
+          evm_address: "0x5FD55A1B9FC24967C4dB09C513C3BA0DFa7FF687",
           symbol: "gUSDC",
           name: "gUSDC",
           logo_uri:
