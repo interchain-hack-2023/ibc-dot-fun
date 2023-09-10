@@ -237,8 +237,10 @@ export async function createCosmosMessageMsgEthereumTx(
     chainId,
     account.bech32Address,
     JSON.stringify({
+      chainId: 9001,
       nonce: ethers.toQuantity(nonce),
-      gasPrice: ethers.toQuantity(gasPrice),
+      maxFeePerGas: ethers.toQuantity(1500000000n),
+      maxPriorityFeePerGas: ethers.toQuantity(1500000000n),
       gasLimit: ethers.toQuantity(gasLimit),
       to: to,
       value: ethers.toQuantity(value),
@@ -254,8 +256,10 @@ export async function createCosmosMessageMsgEthereumTx(
   const s = signature.slice(32, 64);
   const v = signature.slice(64, 65);
   const transaction: ethers.TransactionLike = {
+    chainId: 9001,
     nonce: Number(nonce),
-    gasPrice: gasPrice,
+    maxFeePerGas: 1500000000n,
+    maxPriorityFeePerGas: 1500000000n,
     gasLimit: gasLimit,
     to: to,
     value: value,
@@ -272,9 +276,11 @@ export async function createCosmosMessageMsgEthereumTx(
     throw new Error("Signature is empty");
   }
 
-  const ethTx = new Proto.Ethermint.EVM.Tx.LegacyTx({
+  const ethTx = new Proto.Ethermint.EVM.Tx.DynamicFeeTx({
+    chainId: "9001",
     nonce: nonce,
-    gasPrice: ethers.toQuantity(gasPrice),
+    gasFeeCap: ethers.toQuantity(1500000000n),
+    gasTipCap: ethers.toQuantity(1500000000n),
     gas: gasLimit,
     to: to,
     value: ethers.toQuantity(value),
@@ -288,12 +294,13 @@ export async function createCosmosMessageMsgEthereumTx(
 
   const ret = new Proto.Ethermint.EVM.Tx.MsgEthereumTx({
     // @ts-ignore
-    data: ethTx,
+    data: {
+      value: ethTx.toBinary(),
+      typeUrl: "/" + Proto.Ethermint.EVM.Tx.LegacyTx.typeName,
+    },
     hash: hash,
     from: from,
   });
-  // @ts-ignore
-  ret.data = ethTx;
   console.log("ret", ret);
   return ret;
 }
