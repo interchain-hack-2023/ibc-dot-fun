@@ -139,7 +139,7 @@ async function makeEVMRouteResponse(
     swap: {
       swap_in: {
         swap_venue: {
-          name: "EVMswap",
+          name: "evmos-dex",
           chain_id: sourceAssetChainID,
         },
         swap_operations: [
@@ -168,7 +168,7 @@ async function makeEVMRouteResponse(
     does_swap: true,
     estimated_amount_out: route.dexAgg.expectedAmountOut,
     swap_venue: {
-      name: "EVMswap",
+      name: "evmos-dex",
       chain_id: sourceAssetChainID,
     },
     dex_aggregate: route.dexAgg,
@@ -226,7 +226,11 @@ export function useComposedRoute(
           return;
         }
 
-        if (evmRouteResponse.dest_asset_chain_id === destinationAssetChainID) {
+        console.log(evmRouteResponse);
+        console.log(destinationAssetChainID);
+
+        if (evmRouteResponse.dest_asset_chain_id == destinationAssetChainID) {
+          console.log("same chain");
           return evmRouteResponse;
         }
 

@@ -67,7 +67,7 @@ import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
 import { fromBase64 } from "@cosmjs/encoding";
 import { createCosmosPayload } from "./transactions";
 import { Proto } from "@evmos/proto";
-import ethers from "ethers";
+import { ethers } from "ethers";
 import { CompressedBatchProof } from "cosmjs-types/proofs";
 import assert from "assert";
 
@@ -232,19 +232,21 @@ export async function createCosmosMessageMsgEthereumTx(
     throw new Error("Keplr not found");
   }
   const account = await window.keplr.getKey(chainId);
+  console.log("using keplr to sign eth")
   const signature = await window.keplr.signEthereum(
     chainId,
     account.bech32Address,
     JSON.stringify({
-      nonce: Number(nonce),
-      gasPrice: Number(gasPrice),
-      gasLimit: Number(gasLimit),
+      nonce: ethers.toQuantity(nonce),
+      gasPrice: ethers.toQuantity(gasPrice),
+      gasLimit: ethers.toQuantity(gasLimit),
       to: to,
-      value: Number(value),
+      value: ethers.toQuantity(value),
       data: data,
     }),
     EthSignType.TRANSACTION
   );
+  console.log(signature);
 
   assert(signature.length === 65, "signature length is invalid");
 
@@ -304,6 +306,7 @@ export async function signAndBroadcastEvmosRaw(
   signerAddress: string,
   payload: Proto.Ethermint.EVM.Tx.MsgEthereumTx
 ) {
+  console.log(payload);
   const chainID = "evmos_9001-2";
   const result = await axios.get(
     `https://rest.bd.evmos.org:1317${generateEndpointAccount(signerAddress)}`

@@ -71,8 +71,8 @@ export function useSwapWidget() {
       if (!routeResponse) {
         return 0;
       }
-
-      return getNumberOfTransactionsFromRoute(routeResponse);
+      return 1;
+      // return getNumberOfTransactionsFromRoute(routeResponse);
     },
     enabled: !!routeResponse,
   });

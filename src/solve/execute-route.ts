@@ -100,6 +100,8 @@ export async function executeRoute(
   onTxSuccess: (tx: any, index: number) => void,
   onError: (error: any) => void
 ) {
+
+  console.log("starting to execute route");
   await enableChains(walletClient, route.chain_ids);
 
   const userAddresses: Record<string, string> = {};
@@ -141,12 +143,16 @@ export async function executeRoute(
         evmSenderAddr,
         route.source_asset_chain_id
       );
+
+      console.log("build evm hex data");
       const buildResult: MetamaskTransaction = await buildEVMHexData(
         leapClient,
         evmSenderAddr,
         route
       );
+      console.log(buildResult);
 
+      console.log("create evmTx");
       const evmTx = await createCosmosMessageMsgEthereumTx(
         route.source_asset_chain_id,
         getBigInt(nonce),
@@ -157,6 +163,7 @@ export async function executeRoute(
         buildResult.data,
         evmSenderAddr
       );
+      console.log(evmTx.toBinary());
 
       const evmMsg = {
         chain_id: route.source_asset_chain_id,
@@ -252,7 +259,10 @@ export async function executeRoute(
       }
     }
 
-    amountNeeded += getBigInt(averageGasPrice * gasNeeded);
+    console.log("averageGasPrice", averageGasPrice);
+    console.log("gasNeeded", gasNeeded);
+
+    amountNeeded += getBigInt(ethers.getBigInt(averageGasPrice) * ethers.getBigInt(gasNeeded));
 
     const balance = await client.getBalance(
       userAddresses[multiHopMsg.chain_id],
