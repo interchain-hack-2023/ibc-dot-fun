@@ -55,9 +55,11 @@ export class LeapClient {
 
   constructor(ignoreChains: string[] = []) {
     this.skipClient = new SkipClient(ignoreChains);
+    const headers = { Authorization: 'Basic ZWlzZW46Zm9yZXZlcg==' };
     this.httpClientForEVM = axios.create({
       baseURL: API_EVM_URL,
       timeout: 5000,
+      headers
     });
     this.evm = new EvmService(this.httpClientForEVM);
   }

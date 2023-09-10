@@ -250,7 +250,7 @@ export async function createCosmosMessageMsgEthereumTx(
 
   assert(signature.length === 65, "signature length is invalid");
 
-  const r = signature.slice(0, 32);
+  const r: Uint8Array = signature.slice(0, 32);
   const s = signature.slice(32, 64);
   const v = signature.slice(64, 65);
   const transaction: ethers.TransactionLike = {
@@ -274,23 +274,28 @@ export async function createCosmosMessageMsgEthereumTx(
 
   const ethTx = new Proto.Ethermint.EVM.Tx.LegacyTx({
     nonce: nonce,
-    gasPrice: gasPrice.toString(),
+    gasPrice: ethers.toQuantity(gasPrice),
     gas: gasLimit,
     to: to,
-    value: value.toString(),
+    value: ethers.toQuantity(value),
     data: ethers.getBytes(data),
     r: r,
     s: s,
     v: v,
   });
 
-  return new Proto.Ethermint.EVM.Tx.MsgEthereumTx({
+  console.log(ethTx, hash, from);
+
+  const ret = new Proto.Ethermint.EVM.Tx.MsgEthereumTx({
     // @ts-ignore
     data: ethTx,
-    size: ethTx.toBinary().length, // deprecated
     hash: hash,
     from: from,
   });
+  // @ts-ignore
+  ret.data = ethTx;
+  console.log("ret", ret);
+  return ret;
 }
 
 export const accountParser = (account: any) => {
@@ -339,7 +344,12 @@ export async function signAndBroadcastEvmosRaw(
     fee,
     memo,
   };
-  const tx = createCosmosPayload(context, payload);
+  const protoMessage = {
+    message: payload,
+    path: Proto.Ethermint.EVM.Tx.MsgEthereumTx.typeName
+  }
+  const tx = createCosmosPayload(context, protoMessage);
+  console.log("cosmo tx", tx);
   const { signDirect } = tx;
   const signer = await getOfflineSigner(walletClient, chainID);
   const signResponse = await signer.signDirect(sender.accountAddress, {
@@ -361,10 +371,15 @@ export async function signAndBroadcastEvmosRaw(
     signed.authInfoBytes,
     signatures
   );
+
+  console.log("signed tx", signedTx);
+
   const response = await axios.post(
     `https://rest.bd.evmos.org:1317${generateEndpointBroadcast()}`,
     generatePostBodyBroadcast(signedTx, "BROADCAST_MODE_BLOCK")
   );
+
+  console.log("response", response.data);
   return response.data.tx_response;
 }
 

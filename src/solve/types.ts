@@ -1,5 +1,7 @@
 import { createQueryKeys } from "@lukemorales/query-key-factory";
 import { QueryFunctionContext } from "@tanstack/query-core";
+import { MsgEthereumTx } from "@evmos/proto/dist/proto/ethermint/evm/tx";
+
 export interface ResponseDto<T extends unknown> {
   result: T;
 }
@@ -184,7 +186,7 @@ export interface Affiliate {
 export interface MultiChainMsg {
   chain_id: string;
   path: string[];
-  msg: string;
+  msg: string | MsgEthereumTx;
   msg_type_url: string;
 }
 

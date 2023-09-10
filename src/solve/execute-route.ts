@@ -113,7 +113,7 @@ export async function executeRoute(
     userAddresses[chainID] = address;
   }
 
-  let evmExtensionMsgs: MsgsResponse | undefined = undefined;
+  let evmExtensionMsgs: MsgsResponse | MsgEthereumTx |undefined = undefined;
   if (getEVMChainId(route.source_asset_chain_id) != 0) {
     const cosmoTargetChainTokenIn: string =
       tokenChainMap[route.source_asset_chain_id][
@@ -163,14 +163,15 @@ export async function executeRoute(
         buildResult.data,
         evmSenderAddr
       );
-      console.log(evmTx.toBinary());
+      console.log("evmTx", evmTx);
 
       const evmMsg = {
         chain_id: route.source_asset_chain_id,
         path: [route.source_asset_chain_id],
-        msg: evmTx.toJsonString(),
-        msg_type_url: "/ethermint.evm.v1.DynamicFeeTx",
+        msg: evmTx,
+        msg_type_url: "ethermint.evm.v1.MsgEthereumTx",
       };
+      console.log("evmMsg", evmMsg);
       evmExtensionMsgs = {
         msgs: [evmMsg],
       };
@@ -307,7 +308,13 @@ export async function executeRoute(
       gasNeeded = 1500000;
     }
 
-    const msgJSON = JSON.parse(multiHopMsg.msg);
+    let msgJSON;
+    if (typeof(multiHopMsg.msg) === 'string') {
+      msgJSON = JSON.parse(multiHopMsg.msg);
+    } else {
+      msgJSON = null;
+    }
+
 
     let msg: EncodeObject;
 
@@ -441,10 +448,12 @@ export async function executeRoute(
           route.source_asset_chain_id
         );
 
+        console.log("multiHopMsg", multiHopMsg.msg);
+
         const tx = await signAndBroadcastEvmosRaw(
           walletClient,
           account.address,
-          MsgEthereumTx.fromJsonString(multiHopMsg.msg)
+          multiHopMsg.msg as MsgEthereumTx
         );
         txHash = tx.transactionHash;
       } else {
